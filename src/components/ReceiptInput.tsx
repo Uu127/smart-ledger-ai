@@ -19,7 +19,7 @@ export function ReceiptInput() {
 
   const [date, setDate] = useState("");
   const [debitAccount, setDebitAccount] = useState("雑費");
-  const [creditAccount, setCreditAccount] = useState("現金");
+  const [creditAccount] = useState("現金");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [counterparty, setCounterparty] = useState("");
