@@ -12,6 +12,7 @@ export interface LedgerEntry {
   description: string;
   counterparty: string;
   createdAt: string;
+  entryType: "expense" | "income";  // この行を追加
 }
 
 export interface ReceiptParseResult {
@@ -21,3 +22,4 @@ export interface ReceiptParseResult {
   suggestedDebitAccount: string;
   suggestedDescription: string;
 }
+
