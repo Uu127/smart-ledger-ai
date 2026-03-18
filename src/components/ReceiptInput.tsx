@@ -77,6 +77,7 @@ export function ReceiptInput() {
     setSubmitted(true);
 
     addLedgerEntry({
+      entryType: "expense",  // ← この1行を追加
       date,
       debitAccount,
       creditAccount,
