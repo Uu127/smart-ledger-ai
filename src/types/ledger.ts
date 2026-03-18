@@ -1,11 +1,13 @@
 // src/types/ledger.ts
-export type ExpenseCategory = string; // 後で具体的なリストにできます
+import type { DebitAccountLabel, CreditAccountLabel } from "@/constants/accounts";
+
+export type { DebitAccountLabel, CreditAccountLabel };
 
 export interface LedgerEntry {
   id: string;
   date: string;
-  debitAccount: string;   // 借方（経費科目）
-  creditAccount: string;  // 貸方（支払方法）
+  debitAccount: DebitAccountLabel;
+  creditAccount: CreditAccountLabel;
   amount: number;
   description: string;
   counterparty: string;
