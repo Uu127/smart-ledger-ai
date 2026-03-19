@@ -9,9 +9,9 @@ import { ReceiptInput } from "@/components/ReceiptInput";
 import { SalesInput } from "@/components/SalesInput";
 import { Dashboard } from "@/components/Dashboard";
 import { LedgerList } from "@/components/LedgerList";
+import { TaxReport } from "@/components/TaxReport";
 import { hasLocalData, getLocalEntries, hasFirestoreData } from "@/lib/migration";
 
-// ── 認証済み画面 ──────────────────────────────────────────
 function AuthenticatedApp() {
   const { user, logout } = useAuth();
   const [showMigration, setShowMigration]   = useState(false);
@@ -30,22 +30,18 @@ function AuthenticatedApp() {
     })();
   }, [user]);
 
-  const auth = { logout };
-
   return (
     <BrowserRouter>
       {showMigration && (
-        <MigrationDialog
-          count={migrationCount}
-          onDone={() => setShowMigration(false)}
-        />
+        <MigrationDialog count={migrationCount} onDone={() => setShowMigration(false)} />
       )}
-      <Layout auth={auth}>
+      <Layout auth={{ logout }}>
         <Routes>
           <Route path="/"          element={<ReceiptInput />} />
           <Route path="/sales"     element={<SalesInput />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/ledger"    element={<LedgerList />} />
+          <Route path="/tax"       element={<TaxReport />} />
           <Route path="*"          element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
@@ -53,10 +49,8 @@ function AuthenticatedApp() {
   );
 }
 
-// ── ルートゲート ──────────────────────────────────────────
 function AppGate() {
   const { user, loading } = useAuth();
-
   if (loading) {
     return (
       <div className="min-h-dvh bg-slate-50 flex items-center justify-center">
@@ -67,12 +61,10 @@ function AppGate() {
       </div>
     );
   }
-
   if (!user) return <LoginPage />;
   return <AuthenticatedApp />;
 }
 
-// ── エントリポイント ──────────────────────────────────────
 export default function App() {
   return (
     <AuthProvider>

@@ -1,31 +1,23 @@
 // src/components/Dashboard.tsx
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar, FileText } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useLedger } from "@/hooks/useLedger";
 import type { LedgerEntry } from "@/types/ledger";
 
-// ── ユーティリティ ────────────────────────────────────────
-
-function getYearMonth(date: string) {
-  return date.slice(0, 7); // "YYYY-MM"
-}
-
+function getYearMonth(date: string) { return date.slice(0, 7); }
 function formatYM(ym: string) {
   const [, m] = ym.split("-");
   return `${Number(m)}月`;
 }
-
-// 確定申告締切まで残り日数
 function daysUntilFiling() {
   const now  = new Date();
   const year = now.getMonth() >= 2 ? now.getFullYear() + 1 : now.getFullYear();
-  const deadline = new Date(year, 2, 15); // 3月15日
+  const deadline = new Date(year, 2, 15);
   const diff = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   return diff > 0 ? diff : 0;
 }
-
-// ── サブコンポーネント ────────────────────────────────────
 
 function SummaryCard({ label, amount, icon: Icon, color }: {
   label: string; amount: number; icon: React.ElementType; color: string;
@@ -44,7 +36,6 @@ function SummaryCard({ label, amount, icon: Icon, color }: {
   );
 }
 
-// シンプルな棒グラフ（rechartsなしで実装）
 function MonthlyChart({ data }: { data: { ym: string; income: number; expense: number }[] }) {
   const max = Math.max(...data.flatMap(d => [d.income, d.expense]), 1);
   return (
@@ -52,27 +43,21 @@ function MonthlyChart({ data }: { data: { ym: string; income: number; expense: n
       {data.slice(0, 6).map((d) => (
         <div key={d.ym} className="space-y-1.5">
           <p className="text-[10px] font-black text-slate-400">{formatYM(d.ym)}</p>
-          {/* 収入バー */}
           <div className="flex items-center gap-2">
             <div className="w-12 text-[9px] font-bold text-blue-400 text-right">収入</div>
             <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div
-                className="h-full bg-blue-400 rounded-full transition-all duration-500"
-                style={{ width: `${(d.income / max) * 100}%` }}
-              />
+              <div className="h-full bg-blue-400 rounded-full transition-all duration-500"
+                style={{ width: `${(d.income / max) * 100}%` }} />
             </div>
             <div className="w-16 text-[9px] font-bold text-slate-500 text-right">
               ¥{(d.income / 10000).toFixed(0)}万
             </div>
           </div>
-          {/* 経費バー */}
           <div className="flex items-center gap-2">
             <div className="w-12 text-[9px] font-bold text-emerald-400 text-right">経費</div>
             <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div
-                className="h-full bg-emerald-400 rounded-full transition-all duration-500"
-                style={{ width: `${(d.expense / max) * 100}%` }}
-              />
+              <div className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                style={{ width: `${(d.expense / max) * 100}%` }} />
             </div>
             <div className="w-16 text-[9px] font-bold text-slate-500 text-right">
               ¥{(d.expense / 10000).toFixed(0)}万
@@ -84,21 +69,15 @@ function MonthlyChart({ data }: { data: { ym: string; income: number; expense: n
   );
 }
 
-// 科目別経費ランキング
 function AccountRanking({ entries }: { entries: LedgerEntry[] }) {
   const ranked = useMemo(() => {
     const map = new Map<string, number>();
-    entries
-      .filter(e => e.entryType === "expense")
+    entries.filter(e => e.entryType === "expense")
       .forEach(e => map.set(e.debitAccount, (map.get(e.debitAccount) ?? 0) + e.amount));
-    return Array.from(map.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5);
+    return Array.from(map.entries()).sort(([, a], [, b]) => b - a).slice(0, 5);
   }, [entries]);
-
   const total = ranked.reduce((s, [, v]) => s + v, 0);
   if (ranked.length === 0) return null;
-
   return (
     <div className="space-y-3">
       {ranked.map(([account, amount]) => (
@@ -108,10 +87,8 @@ function AccountRanking({ entries }: { entries: LedgerEntry[] }) {
             <span className="text-xs font-black text-slate-900">¥{amount.toLocaleString()}</span>
           </div>
           <div className="bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="h-full bg-emerald-400 rounded-full transition-all duration-500"
-              style={{ width: `${(amount / total) * 100}%` }}
-            />
+            <div className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+              style={{ width: `${(amount / total) * 100}%` }} />
           </div>
         </div>
       ))}
@@ -119,34 +96,27 @@ function AccountRanking({ entries }: { entries: LedgerEntry[] }) {
   );
 }
 
-// ── メインコンポーネント ───────────────────────────────────
-
 export function Dashboard() {
   const { entries, syncing } = useLedger();
   const year = new Date().getFullYear();
 
-  // 今年のデータのみ
   const yearEntries = useMemo(() =>
-    entries.filter(e => e.date.startsWith(String(year))),
-  [entries, year]);
+    entries.filter(e => e.date.startsWith(String(year))), [entries, year]);
 
   const yearIncome  = useMemo(() => yearEntries.filter(e => e.entryType === "income").reduce((s, e) => s + e.amount, 0), [yearEntries]);
   const yearExpense = useMemo(() => yearEntries.filter(e => e.entryType === "expense").reduce((s, e) => s + e.amount, 0), [yearEntries]);
   const yearProfit  = yearIncome - yearExpense;
 
-  // 月次集計
   const monthlyData = useMemo(() => {
     const map = new Map<string, { income: number; expense: number }>();
     yearEntries.forEach(e => {
-      const ym = getYearMonth(e.date);
+      const ym  = getYearMonth(e.date);
       const cur = map.get(ym) ?? { income: 0, expense: 0 };
       if (e.entryType === "income")  cur.income  += e.amount;
       if (e.entryType === "expense") cur.expense += e.amount;
       map.set(ym, cur);
     });
-    return Array.from(map.entries())
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([ym, v]) => ({ ym, ...v }));
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a)).map(([ym, v]) => ({ ym, ...v }));
   }, [yearEntries]);
 
   const filingDays = daysUntilFiling();
@@ -157,7 +127,6 @@ export function Dashboard() {
       transition={{ duration: 0.3 }}
       className="p-4 space-y-4 pb-24"
     >
-      {/* タイトル */}
       <div className="px-2">
         <h2 className="text-2xl font-black text-slate-900">Dashboard</h2>
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{year}年 収支サマリー</p>
@@ -186,7 +155,7 @@ export function Dashboard() {
         <SummaryCard label="経費合計" amount={yearExpense} icon={TrendingDown} color="bg-emerald-500" />
       </div>
 
-      {/* 所得カード */}
+      {/* 所得 */}
       <div className={`rounded-2xl p-5 ${yearProfit >= 0 ? "bg-slate-50 border border-slate-100" : "bg-red-50 border border-red-100"}`}>
         <div className="flex items-center gap-2 mb-1">
           <Wallet className={`w-4 h-4 ${yearProfit >= 0 ? "text-slate-400" : "text-red-400"}`} />
@@ -199,7 +168,23 @@ export function Dashboard() {
         </p>
       </div>
 
-      {/* データなし */}
+      {/* 申告書ページへのリンク */}
+      <Link
+        to="/tax"
+        className="w-full flex items-center justify-between p-4 rounded-2xl bg-emerald-500 text-white active:scale-95 transition-all shadow-lg shadow-emerald-200"
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-xl">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-black">青色申告書を作成</p>
+            <p className="text-[10px] text-emerald-100 font-bold">{year}年分のCSVを出力できます</p>
+          </div>
+        </div>
+        <span className="text-emerald-200 text-lg font-black">›</span>
+      </Link>
+
       {syncing && (
         <div className="py-10 text-center">
           <div className="w-8 h-8 rounded-full border-4 border-emerald-200 border-t-emerald-500 animate-spin mx-auto" />
@@ -213,7 +198,6 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* 月次グラフ */}
       {monthlyData.length > 0 && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50">
           <h3 className="text-sm font-black text-slate-800 mb-4">月次収支</h3>
@@ -221,7 +205,6 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* 科目別経費 */}
       {yearEntries.some(e => e.entryType === "expense") && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50">
           <h3 className="text-sm font-black text-slate-800 mb-4">経費 科目別ランキング</h3>
