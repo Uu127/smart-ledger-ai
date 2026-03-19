@@ -1,1 +1,191 @@
 @import "tailwindcss";
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   印刷・PDF出力用スタイル
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media print {
+  /* 印刷時はアプリUI全体を非表示 */
+  body > #root > * {
+    display: none !important;
+  }
+
+  /* 印刷用レイアウトのみ表示 */
+  #tax-report-print {
+    display: block !important;
+  }
+}
+
+/* 印刷用コンテナ */
+.print-container {
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 10pt;
+  color: #000;
+  background: #fff;
+}
+
+.print-page {
+  width: 100%;
+  padding: 16mm 18mm;
+  box-sizing: border-box;
+  page-break-after: always;
+}
+
+.print-page-break {
+  page-break-before: always;
+}
+
+/* ヘッダー */
+.print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #000;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.print-title {
+  font-size: 16pt;
+  font-weight: bold;
+  margin: 0 0 2px 0;
+}
+
+.print-subtitle {
+  font-size: 9pt;
+  color: #444;
+  margin: 0;
+}
+
+.print-header-right {
+  font-size: 8pt;
+  color: #666;
+  text-align: right;
+}
+
+.print-header-right p {
+  margin: 0;
+}
+
+/* セクション */
+.print-section {
+  margin-bottom: 14px;
+}
+
+.print-section-title {
+  font-size: 10pt;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+  padding: 2px 0;
+  border-bottom: 1px solid #999;
+}
+
+/* テーブル */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+
+.print-table th,
+.print-table td {
+  border: 1px solid #ccc;
+  padding: 3px 6px;
+}
+
+.print-th-label {
+  background: #f0f0f0;
+  font-weight: bold;
+  width: 35%;
+  text-align: left;
+}
+
+.print-th-value {
+  background: #f0f0f0;
+  font-weight: bold;
+  width: 20%;
+  text-align: right;
+}
+
+.print-th-note {
+  background: #f0f0f0;
+  font-weight: bold;
+  text-align: left;
+}
+
+.print-th-month {
+  background: #f0f0f0;
+  font-weight: bold;
+  text-align: center;
+  width: 16.66%;
+}
+
+.print-td-label {
+  width: 35%;
+  text-align: left;
+}
+
+.print-td-value {
+  width: 20%;
+  text-align: right;
+  font-weight: bold;
+}
+
+.print-td-note {
+  color: #666;
+  font-size: 8pt;
+}
+
+.print-td-month {
+  text-align: right;
+  font-size: 8pt;
+}
+
+.print-td-sm {
+  font-size: 8pt;
+  padding: 2px 4px;
+}
+
+.print-td-right {
+  text-align: right;
+}
+
+.print-tr-total td {
+  font-weight: bold;
+  background: #f8f8f8;
+  border-top: 2px solid #666;
+}
+
+.print-tr-detail:nth-child(even) td {
+  background: #fafafa;
+}
+
+.print-th {
+  background: #f0f0f0;
+  font-weight: bold;
+  text-align: left;
+  font-size: 8pt;
+}
+
+/* 注意書き */
+.print-notice {
+  margin-top: 12px;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  font-size: 7pt;
+  color: #666;
+}
+
+.print-notice p {
+  margin: 1px 0;
+}
+
+/* フッター */
+.print-footer {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 7pt;
+  color: #999;
+  border-top: 1px solid #eee;
+  padding-top: 4px;
+}

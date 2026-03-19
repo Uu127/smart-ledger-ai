@@ -1,11 +1,12 @@
 // src/components/TaxReport.tsx
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, FileText, ChevronDown, Home, Package, ExternalLink } from "lucide-react";
+import { Download, FileText, ChevronDown, Home, Package, ExternalLink, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLedger } from "@/hooks/useLedger";
 import { useProRate } from "@/hooks/useProRate";
 import { useDepreciation, calcTotalDepreciation } from "@/hooks/useDepreciation";
+import { TaxReportPrint } from "@/components/TaxReportPrint";
 import type { LedgerEntry } from "@/types/ledger";
 
 const ACCOUNT_MAP: Record<string, string> = {
@@ -50,7 +51,7 @@ function calcReport(
     expenseMap.set("減価償却費", (expenseMap.get("減価償却費") ?? 0) + extraDepreciation);
   }
 
-  const expenses    = OFFICIAL_ORDER.filter(k => expenseMap.has(k)).map(k => ({ account: k, amount: expenseMap.get(k)! }));
+  const expenses     = OFFICIAL_ORDER.filter(k => expenseMap.has(k)).map(k => ({ account: k, amount: expenseMap.get(k)! }));
   const totalExpense = expenses.reduce((s, e) => s + e.amount, 0);
   const netIncome    = totalIncome - totalExpense;
 
@@ -100,8 +101,25 @@ export function TaxReport() {
 
   const isLoading = syncing || prLoading || depLoading;
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 space-y-4 pb-24">
+
+      {/* 印刷用レイアウト（画面には非表示・印刷時のみ表示） */}
+      <TaxReportPrint
+        year={year}
+        totalIncome={report.totalIncome}
+        totalExpense={report.totalExpense}
+        netIncome={report.netIncome}
+        expenses={report.expenses}
+        proRateEnabled={proRate.enabled}
+        proRateRatio={proRate.ratio}
+        depreciation={depreciation}
+        entries={entries}
+      />
 
       {/* タイトル */}
       <div className="px-2 flex items-start justify-between">
@@ -188,25 +206,34 @@ export function TaxReport() {
             </div>
           )}
 
-          {/* e-Tax補助リンク */}
-          <Link to="/etax"
-            className="w-full flex items-center justify-between p-4 rounded-2xl bg-indigo-500 text-white active:scale-95 transition-all shadow-lg shadow-indigo-200">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-xl"><ExternalLink className="w-5 h-5" /></div>
-              <div>
-                <p className="text-sm font-black">e-Tax 入力補助を開く</p>
-                <p className="text-[10px] text-indigo-200 font-bold">数値をコピーしてe-Taxに貼り付け</p>
-              </div>
+          {report.expenses.length === 0 && (
+            <div className="py-12 text-center bg-white rounded-2xl border-2 border-dashed border-slate-100">
+              <p className="text-sm font-bold text-slate-300">{year}年のデータがありません</p>
             </div>
-            <span className="text-indigo-200 text-lg font-black">›</span>
-          </Link>
+          )}
 
-          {/* CSV出力 */}
+          {/* 出力ボタン群 */}
           <div className="space-y-3">
+            {/* PDF印刷 */}
+            <button
+              onClick={handlePrint}
+              disabled={report.yearEntries.length === 0}
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-slate-900 text-white font-black text-sm shadow-lg hover:bg-slate-800 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Printer className="w-5 h-5" /> PDFとして保存・印刷
+            </button>
+
+            {/* e-Tax補助 */}
+            <Link to="/etax"
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-indigo-500 text-white font-black text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-600 active:scale-95 transition-all">
+              <ExternalLink className="w-5 h-5" /> e-Tax 入力補助を開く
+            </Link>
+
+            {/* CSV出力 */}
             <button onClick={() => downloadSummaryCSV(year, report, proRate.enabled, proRate.ratio)}
               disabled={report.yearEntries.length === 0}
               className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-emerald-500 text-white font-black text-sm shadow-lg shadow-emerald-200 hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-              <Download className="w-5 h-5" /> 収支サマリーCSV（申告補助用）を出力
+              <Download className="w-5 h-5" /> 収支サマリーCSVを出力
             </button>
             <button onClick={() => downloadDetailCSV(year, report)}
               disabled={report.yearEntries.length === 0}
