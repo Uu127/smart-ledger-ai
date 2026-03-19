@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Home, CheckCircle2, Info } from "lucide-react";
 import { useProRate } from "@/hooks/useProRate";
-import { DEBIT_ACCOUNT_LABELS } from "@/constants/accounts";
+
 
 // 按分対象になりやすい科目のみ表示
 const PRORATEABLE_ACCOUNTS = [
