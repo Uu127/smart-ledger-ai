@@ -26,7 +26,7 @@ export function useReceiptParse() {
     setError(null);
     try {
       const base64Data = await toBase64(file);
-      const parseReceipt = httpsCallable
+      const parseReceipt = httpsCallable<
         { base64Data: string; mimeType: string },
         ReceiptParseResult
       >(functions, "parseReceipt");
