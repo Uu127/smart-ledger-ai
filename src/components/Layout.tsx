@@ -1,6 +1,6 @@
 // src/components/Layout.tsx
 import { Link, useLocation } from "react-router-dom";
-import { Camera, History, LogOut, Wallet, TrendingUp, PieChart } from "lucide-react";
+import { LogOut, Wallet, TrendingUp, History, Receipt, BarChart2 } from "lucide-react";
 
 interface LayoutProps {
   auth: { logout: () => void };
@@ -8,10 +8,10 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { to: "/",          label: "Scan",      icon: Camera     },
-  { to: "/sales",     label: "Sales",     icon: TrendingUp },
-  { to: "/dashboard", label: "Dashboard", icon: PieChart   },
-  { to: "/ledger",    label: "History",   icon: History    },
+  { to: "/",          label: "経費入力",   icon: Receipt    },
+  { to: "/sales",     label: "収入入力",   icon: TrendingUp },
+  { to: "/dashboard", label: "集計",       icon: BarChart2  },
+  { to: "/ledger",    label: "履歴",       icon: History    },
 ] as const;
 
 export function Layout({ auth, children }: LayoutProps) {
@@ -44,7 +44,7 @@ export function Layout({ auth, children }: LayoutProps) {
         {children}
       </main>
 
-      {/* Bottom Navigation - 4タブ */}
+      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-lg border-t border-slate-100">
         <div className="max-w-2xl mx-auto flex justify-around items-center h-20">
           {navItems.map(({ to, label, icon: Icon }) => {
@@ -58,7 +58,7 @@ export function Layout({ auth, children }: LayoutProps) {
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
-                <span className="text-[9px] font-black uppercase tracking-[0.1em]">
+                <span className="text-[9px] font-black tracking-[0.05em]">
                   {label}
                 </span>
                 {isActive && (
