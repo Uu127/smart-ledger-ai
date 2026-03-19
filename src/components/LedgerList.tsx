@@ -154,12 +154,7 @@ export function LedgerList() {
     [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [entries]);
 
-  const yearTotal = useMemo(() => {
-    const year = new Date().getFullYear();
-    return entries
-      .filter(e => e.date.startsWith(String(year)))
-      .reduce((s, e) => s + e.amount, 0);
-  }, [entries]);
+ 
 
   return (
     <motion.div
