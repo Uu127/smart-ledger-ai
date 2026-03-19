@@ -12,7 +12,7 @@ function getYearMonth(date: string) {
 }
 
 function formatYM(ym: string) {
-  const [y, m] = ym.split("-");
+  const [, m] = ym.split("-");
   return `${Number(m)}月`;
 }
 
