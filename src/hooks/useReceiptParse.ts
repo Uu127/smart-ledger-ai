@@ -1,14 +1,10 @@
 // src/hooks/useReceiptParse.ts
 import { useCallback, useState } from "react";
 import { httpsCallable } from "firebase/functions";
-import { getFunctions } from "firebase/functions";
-import { getApp } from "firebase/app";
+import { functions } from "@/lib/firebase";
 import type { ReceiptParseResult } from "@/types/ledger";
 
 type Status = "idle" | "loading" | "success" | "error";
-
-// Firebase Functions のクライアント（東京リージョン）
-const functions = getFunctions(getApp(), "asia-northeast1");
 
 // 画像を Base64 に変換するユーティリティ
 async function toBase64(file: File): Promise<string> {
@@ -29,10 +25,8 @@ export function useReceiptParse() {
     setStatus("loading");
     setError(null);
     try {
-      // 画像をBase64に変換してFunctionsへ送信
-      // ※ APIキーはFunctions側で管理されており、クライアントには渡らない
       const base64Data = await toBase64(file);
-      const parseReceipt = httpsCallable<
+      const parseReceipt = httpsCallable
         { base64Data: string; mimeType: string },
         ReceiptParseResult
       >(functions, "parseReceipt");
