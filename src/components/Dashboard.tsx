@@ -178,8 +178,8 @@ export function Dashboard() {
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-black">青色申告書を作成</p>
-            <p className="text-[10px] text-emerald-100 font-bold">{year}年分のCSVを出力できます</p>
+          <p className="text-sm font-black">申告書データを確認・出力</p>
+          <p className="text-[10px] text-emerald-100 font-bold">集計データの確認・CSV出力補助</p>
           </div>
         </div>
         <span className="text-emerald-200 text-lg font-black">›</span>
