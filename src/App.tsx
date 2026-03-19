@@ -10,6 +10,7 @@ import { SalesInput } from "@/components/SalesInput";
 import { Dashboard } from "@/components/Dashboard";
 import { LedgerList } from "@/components/LedgerList";
 import { TaxReport } from "@/components/TaxReport";
+import { ProRateSettings } from "@/components/ProRateSettings";
 import { hasLocalData, getLocalEntries, hasFirestoreData } from "@/lib/migration";
 
 function AuthenticatedApp() {
@@ -37,12 +38,13 @@ function AuthenticatedApp() {
       )}
       <Layout auth={{ logout }}>
         <Routes>
-          <Route path="/"          element={<ReceiptInput />} />
-          <Route path="/sales"     element={<SalesInput />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/ledger"    element={<LedgerList />} />
-          <Route path="/tax"       element={<TaxReport />} />
-          <Route path="*"          element={<Navigate to="/" replace />} />
+          <Route path="/"                   element={<ReceiptInput />} />
+          <Route path="/sales"              element={<SalesInput />} />
+          <Route path="/dashboard"          element={<Dashboard />} />
+          <Route path="/ledger"             element={<LedgerList />} />
+          <Route path="/tax"                element={<TaxReport />} />
+          <Route path="/settings/prorate"   element={<ProRateSettings />} />
+          <Route path="*"                   element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </BrowserRouter>

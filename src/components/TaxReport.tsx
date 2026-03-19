@@ -1,12 +1,13 @@
 // src/components/TaxReport.tsx
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, FileText, ChevronDown } from "lucide-react";
+import { Download, FileText, ChevronDown, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useLedger } from "@/hooks/useLedger";
+import { useProRate } from "@/hooks/useProRate";
 import type { LedgerEntry } from "@/types/ledger";
 
 // ── 申告書科目マッピング ──────────────────────────────────
-// アプリ内科目 → 青色申告決算書の科目区分
 const ACCOUNT_MAP: Record<string, string> = {
   "仕入高":     "売上原価（仕入）",
   "外注費":     "外注費",
@@ -35,54 +36,35 @@ const ACCOUNT_MAP: Record<string, string> = {
   "雑費":       "雑費",
 };
 
-// 青色申告決算書の経費科目の正式な並び順
 const OFFICIAL_ORDER = [
-  "売上原価（仕入）",
-  "給料賃金",
-  "専従者給与",
-  "外注費",
-  "減価償却費",
-  "貸倒金",
-  "地代家賃",
-  "利子割引料",
-  "租税公課",
-  "荷造運賃",
-  "水道光熱費",
-  "旅費交通費",
-  "通信費",
-  "広告宣伝費",
-  "接待交際費",
-  "損害保険料",
-  "修繕費",
-  "消耗品費",
-  "福利厚生費",
-  "会議費",
-  "車両費",
-  "研修費（雑費）",
-  "新聞図書費",
-  "支払手数料（雑費）",
-  "雑費",
+  "売上原価（仕入）", "給料賃金", "専従者給与", "外注費",
+  "減価償却費", "貸倒金", "地代家賃", "利子割引料",
+  "租税公課", "荷造運賃", "水道光熱費", "旅費交通費",
+  "通信費", "広告宣伝費", "接待交際費", "損害保険料",
+  "修繕費", "消耗品費", "福利厚生費", "会議費",
+  "車両費", "研修費（雑費）", "新聞図書費", "支払手数料（雑費）", "雑費",
 ];
 
-// ── 集計ロジック ──────────────────────────────────────────
-function calcReport(entries: LedgerEntry[], year: number) {
+// ── 集計ロジック（按分対応） ──────────────────────────────
+function calcReport(
+  entries: LedgerEntry[],
+  year: number,
+  proRateEnabled: boolean,
+  proRateRatio: number,
+  proRateTargets: string[],
+) {
   const yearEntries = entries.filter(e => e.date.startsWith(String(year)));
+  const totalIncome = yearEntries.filter(e => e.entryType === "income").reduce((s, e) => s + e.amount, 0);
 
-  // 売上合計
-  const totalIncome = yearEntries
-    .filter(e => e.entryType === "income")
-    .reduce((s, e) => s + e.amount, 0);
-
-  // 経費を科目別に集計
+  // 経費集計（按分対象は按分後の金額で計上）
   const expenseMap = new Map<string, number>();
-  yearEntries
-    .filter(e => e.entryType === "expense")
-    .forEach(e => {
-      const mapped = ACCOUNT_MAP[e.debitAccount] ?? "雑費";
-      expenseMap.set(mapped, (expenseMap.get(mapped) ?? 0) + e.amount);
-    });
+  yearEntries.filter(e => e.entryType === "expense").forEach(e => {
+    const mapped   = ACCOUNT_MAP[e.debitAccount] ?? "雑費";
+    const isTarget = proRateEnabled && proRateTargets.includes(e.debitAccount);
+    const amount   = isTarget ? Math.round(e.amount * proRateRatio / 100) : e.amount;
+    expenseMap.set(mapped, (expenseMap.get(mapped) ?? 0) + amount);
+  });
 
-  // 正式な並び順で並べ替え
   const expenses = OFFICIAL_ORDER
     .filter(k => expenseMap.has(k))
     .map(k => ({ account: k, amount: expenseMap.get(k)! }));
@@ -98,9 +80,23 @@ function escapeCsv(s: string) {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function downloadSummaryCSV(year: number, report: ReturnType<typeof calcReport>) {
+function downloadBlob(filename: string, csv: string) {
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadSummaryCSV(
+  year: number,
+  report: ReturnType<typeof calcReport>,
+  proRateEnabled: boolean,
+  proRateRatio: number,
+) {
+  const proRateNote = proRateEnabled ? `※家事按分（事業使用率${proRateRatio}%）適用済み` : "※家事按分なし";
   const rows = [
-    ["SmartLedger AI", `${year}年 青色申告決算書 収支サマリー`],
+    ["SmartLedger AI", `${year}年 青色申告決算書 収支サマリー`, proRateNote],
     [],
     ["区分", "金額（円）"],
     ["【売上高】", report.totalIncome],
@@ -132,28 +128,25 @@ function downloadDetailCSV(year: number, report: ReturnType<typeof calcReport>) 
   downloadBlob(`青色申告_${year}年_仕訳明細.csv`, header + "\n" + body);
 }
 
-function downloadBlob(filename: string, csv: string) {
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ── コンポーネント ────────────────────────────────────────
 export function TaxReport() {
   const { entries, syncing } = useLedger();
+  const { settings: proRate, loading: proRateLoading } = useProRate();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
-  const report = useMemo(() => calcReport(entries, year), [entries, year]);
+  const report = useMemo(() => calcReport(
+    entries, year,
+    proRate.enabled, proRate.ratio, proRate.targetAccounts,
+  ), [entries, year, proRate]);
 
-  // 選択可能な年度（データがある年のみ）
   const availableYears = useMemo(() => {
     const years = new Set(entries.map(e => Number(e.date.slice(0, 4))));
     years.add(currentYear);
     return Array.from(years).sort((a, b) => b - a);
   }, [entries, currentYear]);
+
+  const isLoading = syncing || proRateLoading;
 
   return (
     <motion.div
@@ -161,26 +154,46 @@ export function TaxReport() {
       className="p-4 space-y-4 pb-24"
     >
       {/* タイトル */}
-      <div className="px-2">
-        <h2 className="text-2xl font-black text-slate-900">申告書</h2>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">青色申告決算書</p>
+      <div className="px-2 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900">申告書</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">青色申告決算書</p>
+        </div>
+        {/* 家事按分設定へのリンク */}
+        <Link
+          to="/settings/prorate"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 text-purple-600 text-xs font-black active:scale-95 transition-all"
+        >
+          <Home className="w-3.5 h-3.5" />
+          家事按分 {proRate.enabled ? `${proRate.ratio}%` : "OFF"}
+        </Link>
       </div>
+
+      {/* 家事按分バナー（有効時） */}
+      {proRate.enabled && (
+        <div className="bg-purple-50 border border-purple-100 rounded-2xl p-3 flex items-center gap-2">
+          <Home className="w-4 h-4 text-purple-500 shrink-0" />
+          <p className="text-xs font-bold text-purple-700">
+            家事按分 {proRate.ratio}% 適用中 —
+            {proRate.targetAccounts.join("・")} を按分して計算しています
+          </p>
+        </div>
+      )}
 
       {/* 年度選択 */}
       <div className="relative">
         <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
+          value={year} onChange={(e) => setYear(Number(e.target.value))}
           className="w-full p-4 pr-10 rounded-2xl bg-white border border-slate-100 text-slate-800 font-black text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 appearance-none"
         >
           {availableYears.map(y => (
-            <option key={y} value={y}>{y}年（{y}年1月1日〜{y}年12月31日）</option>
+            <option key={y} value={y}>{y}年（{y}/1/1〜{y}/12/31）</option>
           ))}
         </select>
         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
       </div>
 
-      {syncing ? (
+      {isLoading ? (
         <div className="py-10 flex justify-center">
           <div className="w-8 h-8 rounded-full border-4 border-emerald-200 border-t-emerald-500 animate-spin" />
         </div>
@@ -195,7 +208,9 @@ export function TaxReport() {
                 <span className="text-base font-black text-blue-600">¥{report.totalIncome.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                <span className="text-sm font-bold text-slate-600">経費合計</span>
+                <span className="text-sm font-bold text-slate-600">
+                  経費合計{proRate.enabled ? `（按分${proRate.ratio}%適用）` : ""}
+                </span>
                 <span className="text-base font-black text-emerald-600">¥{report.totalExpense.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center py-2">
@@ -213,17 +228,25 @@ export function TaxReport() {
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">経費 科目別明細</h3>
               <div className="space-y-0">
-                {report.expenses.map((e, i) => (
-                  <div
-                    key={e.account}
-                    className={`flex justify-between items-center py-2.5 ${
-                      i < report.expenses.length - 1 ? "border-b border-slate-50" : ""
-                    }`}
-                  >
-                    <span className="text-sm font-bold text-slate-600">{e.account}</span>
-                    <span className="text-sm font-black text-slate-900">¥{e.amount.toLocaleString()}</span>
-                  </div>
-                ))}
+                {report.expenses.map((e, i) => {
+                  const isProRated = proRate.enabled && proRate.targetAccounts.some(
+                    a => (ACCOUNT_MAP[a] ?? a) === e.account
+                  );
+                  return (
+                    <div
+                      key={e.account}
+                      className={`flex justify-between items-center py-2.5 ${
+                        i < report.expenses.length - 1 ? "border-b border-slate-50" : ""
+                      }`}
+                    >
+                      <span className="text-sm font-bold text-slate-600 flex items-center gap-1">
+                        {e.account}
+                        {isProRated && <span className="text-[9px] bg-purple-100 text-purple-600 font-black px-1.5 py-0.5 rounded-full">按分</span>}
+                      </span>
+                      <span className="text-sm font-black text-slate-900">¥{e.amount.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -235,14 +258,13 @@ export function TaxReport() {
           {/* CSV出力ボタン */}
           <div className="space-y-3">
             <button
-              onClick={() => downloadSummaryCSV(year, report)}
+              onClick={() => downloadSummaryCSV(year, report, proRate.enabled, proRate.ratio)}
               disabled={report.yearEntries.length === 0}
               className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-emerald-500 text-white font-black text-sm shadow-lg shadow-emerald-200 hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Download className="w-5 h-5" />
               収支サマリーCSV（申告用）を出力
             </button>
-
             <button
               onClick={() => downloadDetailCSV(year, report)}
               disabled={report.yearEntries.length === 0}
