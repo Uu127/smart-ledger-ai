@@ -152,7 +152,7 @@ export function LedgerList() {
 
   const allSorted = useMemo(() =>
     [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-  [entries]);
+    [entries]);
 
   const yearTotal = useMemo(() => {
     const year = new Date().getFullYear();
@@ -195,16 +195,25 @@ export function LedgerList() {
       {/* 年間サマリーカード */}
       {entries.length > 0 && (
         <div className="bg-emerald-500 rounded-2xl p-5 text-white">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100">
-            {new Date().getFullYear()}年 経費合計
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 mb-3">
+            {new Date().getFullYear()}年 収支記録 — 全{entries.length}件
           </p>
-          <p className="text-3xl font-black mt-1">
-            <span className="text-lg mr-1">¥</span>
-            {yearTotal.toLocaleString()}
-          </p>
-          <p className="text-[10px] text-emerald-200 font-bold mt-1">
-            全{entries.length}件 / {monthGroups.length}ヶ月分
-          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="text-[9px] font-black text-emerald-200 uppercase tracking-widest mb-1">収入</p>
+              <p className="text-lg font-black">
+                <span className="text-xs mr-0.5">¥</span>
+                {entries.filter(e => e.entryType === "income").reduce((s, e) => s + e.amount, 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <p className="text-[9px] font-black text-emerald-200 uppercase tracking-widest mb-1">経費</p>
+              <p className="text-lg font-black">
+                <span className="text-xs mr-0.5">¥</span>
+                {entries.filter(e => e.entryType === "expense").reduce((s, e) => s + e.amount, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -213,17 +222,15 @@ export function LedgerList() {
         <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl">
           <button
             onClick={() => setView("monthly")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${
-              view === "monthly" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${view === "monthly" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
+              }`}
           >
             <Calendar className="w-3.5 h-3.5" /> 月別
           </button>
           <button
             onClick={() => setView("all")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${
-              view === "all" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all ${view === "all" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400"
+              }`}
           >
             <BarChart2 className="w-3.5 h-3.5" /> すべて
           </button>
