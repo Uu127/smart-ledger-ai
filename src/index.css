@@ -4,17 +4,25 @@
    印刷・PDF出力用スタイル
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-@media print {
-  /* 印刷時はアプリUI全体を非表示 */
-  body > #root > * {
-    display: none !important;
+   @media print {
+    /* ナビゲーション・ヘッダー等を非表示 */
+    header,
+    nav,
+    .print\:hidden {
+      display: none !important;
+    }
+  
+    /* 印刷コンポーネントを表示 */
+    #tax-report-print {
+      display: block !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: white;
+      z-index: 9999;
+    }
   }
-
-  /* 印刷用レイアウトのみ表示 */
-  #tax-report-print {
-    display: block !important;
-  }
-}
 
 /* 印刷用コンテナ */
 .print-container {
