@@ -11,6 +11,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { LedgerList } from "@/components/LedgerList";
 import { hasLocalData, getLocalEntries, hasFirestoreData } from "@/lib/migration";
 
+// ── 認証済み画面 ──────────────────────────────────────────
 function AuthenticatedApp() {
   const { user, logout } = useAuth();
   const [showMigration, setShowMigration]   = useState(false);
@@ -29,12 +30,17 @@ function AuthenticatedApp() {
     })();
   }, [user]);
 
+  const auth = { logout };
+
   return (
     <BrowserRouter>
       {showMigration && (
-        <MigrationDialog count={migrationCount} onDone={() => setShowMigration(false)} />
+        <MigrationDialog
+          count={migrationCount}
+          onDone={() => setShowMigration(false)}
+        />
       )}
-      <Layout auth={{ logout }}>
+      <Layout auth={auth}>
         <Routes>
           <Route path="/"          element={<ReceiptInput />} />
           <Route path="/sales"     element={<SalesInput />} />
@@ -47,6 +53,7 @@ function AuthenticatedApp() {
   );
 }
 
+// ── ルートゲート ──────────────────────────────────────────
 function AppGate() {
   const { user, loading } = useAuth();
 
@@ -65,6 +72,7 @@ function AppGate() {
   return <AuthenticatedApp />;
 }
 
+// ── エントリポイント ──────────────────────────────────────
 export default function App() {
   return (
     <AuthProvider>

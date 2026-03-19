@@ -3,9 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Camera, History, LogOut, Wallet, TrendingUp, PieChart } from "lucide-react";
 
 interface LayoutProps {
-  auth: {
-    logout: () => void;
-  };
+  auth: { logout: () => void };
   children: React.ReactNode;
 }
 
@@ -46,8 +44,8 @@ export function Layout({ auth, children }: LayoutProps) {
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-lg border-t border-slate-100 pb-safe-bottom">
+      {/* Bottom Navigation - 4タブ */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-lg border-t border-slate-100">
         <div className="max-w-2xl mx-auto flex justify-around items-center h-20">
           {navItems.map(({ to, label, icon: Icon }) => {
             const isActive = location.pathname === to;
@@ -55,16 +53,16 @@ export function Layout({ auth, children }: LayoutProps) {
               <Link
                 key={to}
                 to={to}
-                className={`relative flex flex-col items-center gap-1.5 px-4 py-2 transition-all duration-300 active:scale-95 ${
+                className={`relative flex flex-col items-center gap-1 px-4 py-2 transition-all duration-300 active:scale-95 ${
                   isActive ? "text-emerald-500" : "text-slate-400 hover:text-slate-600"
                 }`}
               >
-                <Icon className={`w-6 h-6 ${isActive ? "scale-110" : ""}`} />
-                <span className="text-[10px] font-black uppercase tracking-[0.1em]">
+                <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
+                <span className="text-[9px] font-black uppercase tracking-[0.1em]">
                   {label}
                 </span>
                 {isActive && (
-                  <div className="absolute -top-[1px] w-10 h-1 bg-emerald-500 rounded-full shadow-[0_-4px_8px_rgba(16,185,129,0.4)]" />
+                  <div className="absolute -top-[1px] w-8 h-1 bg-emerald-500 rounded-full shadow-[0_-4px_8px_rgba(16,185,129,0.4)]" />
                 )}
               </Link>
             );
