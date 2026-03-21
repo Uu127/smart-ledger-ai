@@ -20,13 +20,8 @@ function newItem(): DocumentItem {
     unit: "式",
     unitPrice: 0,
     taxRate: 10,
+    taxInclusive: false,
   };
-}
-
-// 税込→税抜 変換
-function taxIncToEx(taxInc: number, rate: 10 | 8 | 0): number {
-  if (rate === 0) return taxInc;
-  return Math.floor(taxInc / (1 + rate / 100));
 }
 
 export function DocumentCreator() {
@@ -35,12 +30,9 @@ export function DocumentCreator() {
   const { documents, addDocument } = useDocuments();
   const { profile } = useIssuerProfile();
 
-  // URLパラメータから書類種別・引き継ぎ元を取得
   const initialType = (searchParams.get("type") as DocumentType) ?? "invoice";
-  const fromId      = searchParams.get("from"); // 請求書から領収書を作る場合
-
-  // 引き継ぎ元の請求書データ
-  const sourceDoc = fromId ? documents.find(d => d.id === fromId) : null;
+  const fromId      = searchParams.get("from");
+  const sourceDoc   = fromId ? documents.find(d => d.id === fromId) : null;
 
   const [type, setType]           = useState<DocumentType>(initialType);
   const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
@@ -50,12 +42,12 @@ export function DocumentCreator() {
   const [clientAddress, setClientAddress] = useState(sourceDoc?.clientAddress ?? "");
   const [clientDept, setClientDept]     = useState(sourceDoc?.clientDepartment ?? "");
   const [items, setItems]         = useState<DocumentItem[]>(
-    sourceDoc?.items ?? [newItem()]
+    sourceDoc?.items.map(i => ({ ...i, id: crypto.randomUUID() })) ?? [newItem()]
   );
   const [notes, setNotes]         = useState(sourceDoc?.notes ?? "");
   const [submitted, setSubmitted] = useState(false);
 
-  // 税込入力モード（品目ごとに切り替え可能）
+  // 全品目の税込/税抜モード切り替え
   const [taxIncMode, setTaxIncMode] = useState(false);
 
   const docNumber = generateDocumentNumber(type, documents.filter(d => d.type === type).length);
@@ -64,13 +56,14 @@ export function DocumentCreator() {
   const addItem    = () => setItems(prev => [...prev, newItem()]);
   const removeItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
 
-  const updateItem = (id: string, key: keyof DocumentItem, value: string | number) =>
+  const updateItem = (id: string, key: keyof DocumentItem, value: string | number | boolean) =>
     setItems(prev => prev.map(i => i.id === id ? { ...i, [key]: value } : i));
 
-  // 税込金額入力 → 税抜単価に変換してセット
-  const handleTaxIncPrice = (id: string, taxIncValue: number, rate: 10 | 8 | 0) => {
-    const exPrice = taxIncToEx(taxIncValue, rate);
-    updateItem(id, "unitPrice", exPrice);
+  // 税込モード切り替え時に全品目の taxInclusive フラグを更新
+  const toggleTaxIncMode = () => {
+    const next = !taxIncMode;
+    setTaxIncMode(next);
+    setItems(prev => prev.map(i => ({ ...i, taxInclusive: next })));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,9 +75,9 @@ export function DocumentCreator() {
       type,
       documentNumber: docNumber,
       issueDate,
-      dueDate:       type === "invoice"  ? dueDate      : undefined,
-      deliveryDate:  (type === "delivery" || type === "receipt") ? deliveryDate : undefined,
-      issuerName:    profile.name,
+      dueDate:      type === "invoice" ? dueDate : undefined,
+      deliveryDate: (type === "delivery" || type === "receipt") ? deliveryDate : undefined,
+      issuerName:   profile.name,
       issuerAddress: profile.address,
       issuerPhone:   profile.phone,
       issuerEmail:   profile.email,
@@ -117,7 +110,7 @@ export function DocumentCreator() {
           <div className="bg-white/10 p-2 rounded-xl"><FileText className="w-5 h-5" /></div>
           <div>
             <h2 className="text-sm font-black">
-              {sourceDoc ? `${DOCUMENT_TYPE_LABELS["invoice"]}から${DOCUMENT_TYPE_LABELS[type]}を作成` : "書類を作成"}
+              {sourceDoc ? `領収書を作成（請求書から引き継ぎ）` : "書類を作成"}
             </h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Document Creator</p>
           </div>
@@ -206,10 +199,12 @@ export function DocumentCreator() {
             <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">品目・内容</h3>
             <div className="flex items-center gap-2">
               {/* 税込/税抜 切り替えトグル */}
-              <button type="button" onClick={() => setTaxIncMode(v => !v)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-500 text-[10px] font-black active:scale-95 transition-all hover:bg-slate-100">
+              <button type="button" onClick={toggleTaxIncMode}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black active:scale-95 transition-all ${
+                  taxIncMode ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                }`}>
                 {taxIncMode
-                  ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税込入力中</>
+                  ? <><ToggleRight className="w-4 h-4" /> 税込入力中</>
                   : <><ToggleLeft className="w-4 h-4" /> 税抜入力</>
                 }
               </button>
@@ -223,7 +218,7 @@ export function DocumentCreator() {
           {taxIncMode && (
             <div className="bg-blue-50 rounded-xl p-3">
               <p className="text-[10px] font-bold text-blue-600">
-                💡 税込金額を入力すると、税率から税抜単価を自動計算します
+                💡 税込金額を入力します。¥400,000と入力すると合計も¥400,000になります
               </p>
             </div>
           )}
@@ -277,46 +272,49 @@ export function DocumentCreator() {
                   </div>
                 </div>
 
-                {/* 単価入力（税抜 or 税込） */}
+                {/* 単価入力 */}
                 <div className="space-y-1">
                   <label className={labelClass}>
                     単価（{taxIncMode ? "税込" : "税抜"}）
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-black">¥</span>
-                    {taxIncMode ? (
-                      /* 税込入力 → 表示は税込、保存は税抜に変換 */
-                      <input type="number" inputMode="numeric" min={0}
-                        defaultValue={item.taxRate > 0
-                          ? Math.ceil(item.unitPrice * (1 + item.taxRate / 100))
-                          : item.unitPrice}
-                        onChange={e => handleTaxIncPrice(item.id, Number(e.target.value), item.taxRate)}
-                        className="w-full pl-7 p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                    ) : (
-                      /* 税抜入力 */
-                      <input type="number" inputMode="numeric" value={item.unitPrice} min={0}
-                        onChange={e => updateItem(item.id, "unitPrice", Number(e.target.value))}
-                        className="w-full pl-7 p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                    )}
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      // 0の場合は空文字を表示（邪魔な0を消す）
+                      value={item.unitPrice === 0 ? "" : item.unitPrice}
+                      placeholder="0"
+                      onChange={e => updateItem(item.id, "unitPrice", e.target.value === "" ? 0 : Number(e.target.value))}
+                      className={`w-full pl-7 p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 ${
+                        taxIncMode ? "focus:ring-blue-400" : "focus:ring-emerald-400"
+                      }`}
+                    />
                   </div>
+
                   {/* 税込/税抜の参考表示 */}
                   {item.unitPrice > 0 && item.taxRate > 0 && (
                     <p className="text-[10px] font-bold text-slate-400">
                       {taxIncMode
-                        ? `税抜単価: ¥${item.unitPrice.toLocaleString()}`
-                        : `税込単価: ¥${Math.ceil(item.unitPrice * (1 + item.taxRate / 100)).toLocaleString()}`
+                        ? `税抜単価（参考）: ¥${Math.round(item.unitPrice / (1 + item.taxRate / 100)).toLocaleString()}`
+                        : `税込単価（参考）: ¥${Math.ceil(item.unitPrice * (1 + item.taxRate / 100)).toLocaleString()}`
                       }
                     </p>
                   )}
                 </div>
 
                 {/* 行合計 */}
-                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-400">小計（税抜）</span>
-                  <span className="text-sm font-black text-slate-700">
-                    ¥{(item.quantity * item.unitPrice).toLocaleString()}
-                  </span>
-                </div>
+                {item.unitPrice > 0 && (
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      小計（{taxIncMode ? "税込" : "税抜"}）
+                    </span>
+                    <span className="text-sm font-black text-slate-700">
+                      ¥{(item.quantity * item.unitPrice).toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
