@@ -1,6 +1,7 @@
 // src/components/Layout.tsx
 import { Link, useLocation } from "react-router-dom";
 import { LogOut, Wallet, TrendingUp, History, Receipt, BarChart2 } from "lucide-react";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 interface LayoutProps {
   auth: { logout: () => void };
@@ -8,10 +9,10 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { to: "/",          label: "経費入力",   icon: Receipt    },
-  { to: "/sales",     label: "収入入力",   icon: TrendingUp },
-  { to: "/dashboard", label: "集計",       icon: BarChart2  },
-  { to: "/ledger",    label: "履歴",       icon: History    },
+  { to: "/",          label: "経費入力", icon: Receipt    },
+  { to: "/sales",     label: "収入入力", icon: TrendingUp },
+  { to: "/dashboard", label: "集計",     icon: BarChart2  },
+  { to: "/ledger",    label: "履歴",     icon: History    },
 ] as const;
 
 export function Layout({ auth, children }: LayoutProps) {
@@ -44,6 +45,9 @@ export function Layout({ auth, children }: LayoutProps) {
         {children}
       </main>
 
+      {/* PWAインストール促進バナー */}
+      <InstallPrompt />
+
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-lg border-t border-slate-100">
         <div className="max-w-2xl mx-auto flex justify-around items-center h-20">
@@ -58,9 +62,7 @@ export function Layout({ auth, children }: LayoutProps) {
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
-                <span className="text-[9px] font-black tracking-[0.05em]">
-                  {label}
-                </span>
+                <span className="text-[9px] font-black tracking-[0.05em]">{label}</span>
                 {isActive && (
                   <div className="absolute -top-[1px] w-8 h-1 bg-emerald-500 rounded-full shadow-[0_-4px_8px_rgba(16,185,129,0.4)]" />
                 )}

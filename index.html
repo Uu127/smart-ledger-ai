@@ -1,10 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- ファビコン -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smart-ledger-ai</title>
+
+    <!-- PWA設定 -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#10b981" />
+
+    <!-- Apple PWA設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SmartLedger" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+
+    <!-- ビューポート -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- SEO / OGP -->
+    <meta name="description" content="AI搭載 個人事業主向け経費・確定申告管理アプリ" />
+    <meta property="og:title" content="SmartLedger AI" />
+    <meta property="og:description" content="レシートを撮るだけで自動仕訳。青色申告もスマホで完結。" />
+    <meta property="og:type" content="website" />
+
+    <title>SmartLedger AI</title>
   </head>
   <body>
     <div id="root"></div>
