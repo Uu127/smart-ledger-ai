@@ -1,6 +1,6 @@
 // src/components/Layout.tsx
 import { Link, useLocation } from "react-router-dom";
-import { LogOut, Wallet, TrendingUp, History, Receipt, BarChart2 } from "lucide-react";
+import { LogOut, Wallet, TrendingUp, History, Receipt, BarChart2, FileText } from "lucide-react";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
 interface LayoutProps {
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/",          label: "経費入力", icon: Receipt    },
   { to: "/sales",     label: "収入入力", icon: TrendingUp },
   { to: "/dashboard", label: "集計",     icon: BarChart2  },
+  { to: "/documents", label: "書類",     icon: FileText   },
   { to: "/ledger",    label: "履歴",     icon: History    },
 ] as const;
 
@@ -48,21 +49,22 @@ export function Layout({ auth, children }: LayoutProps) {
       {/* PWAインストール促進バナー */}
       <InstallPrompt />
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - 5タブ */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-lg border-t border-slate-100">
         <div className="max-w-2xl mx-auto flex justify-around items-center h-20">
           {navItems.map(({ to, label, icon: Icon }) => {
-            const isActive = location.pathname === to;
+            const isActive = location.pathname === to ||
+              (to === "/documents" && location.pathname.startsWith("/documents"));
             return (
               <Link
                 key={to}
                 to={to}
-                className={`relative flex flex-col items-center gap-1 px-4 py-2 transition-all duration-300 active:scale-95 ${
+                className={`relative flex flex-col items-center gap-1 px-3 py-2 transition-all duration-300 active:scale-95 ${
                   isActive ? "text-emerald-500" : "text-slate-400 hover:text-slate-600"
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
-                <span className="text-[9px] font-black tracking-[0.05em]">{label}</span>
+                <span className="text-[9px] font-black tracking-[0.03em]">{label}</span>
                 {isActive && (
                   <div className="absolute -top-[1px] w-8 h-1 bg-emerald-500 rounded-full shadow-[0_-4px_8px_rgba(16,185,129,0.4)]" />
                 )}

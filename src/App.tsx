@@ -10,9 +10,13 @@ import { SalesInput } from "@/components/SalesInput";
 import { Dashboard } from "@/components/Dashboard";
 import { LedgerList } from "@/components/LedgerList";
 import { TaxReport } from "@/components/TaxReport";
+import { ETaxHelper } from "@/components/ETaxHelper";
 import { ProRateSettings } from "@/components/ProRateSettings";
 import { DepreciationManager } from "@/components/DepreciationManager";
-import { ETaxHelper } from "@/components/ETaxHelper";
+import { DocumentList } from "@/components/DocumentList";
+import { DocumentCreator } from "@/components/DocumentCreator";
+import { DocumentPrint } from "@/components/DocumentPrint";
+import { IssuerProfileSettings } from "@/components/IssuerProfileSettings";
 import { hasLocalData, getLocalEntries, hasFirestoreData } from "@/lib/migration";
 
 function AuthenticatedApp() {
@@ -40,15 +44,20 @@ function AuthenticatedApp() {
       )}
       <Layout auth={{ logout }}>
         <Routes>
-          <Route path="/"                 element={<ReceiptInput />} />
-          <Route path="/sales"            element={<SalesInput />} />
-          <Route path="/dashboard"        element={<Dashboard />} />
-          <Route path="/ledger"           element={<LedgerList />} />
-          <Route path="/tax"              element={<TaxReport />} />
-          <Route path="/etax"             element={<ETaxHelper />} />
-          <Route path="/settings/prorate" element={<ProRateSettings />} />
-          <Route path="/depreciation"     element={<DepreciationManager />} />
-          <Route path="*"                 element={<Navigate to="/" replace />} />
+          <Route path="/"                   element={<ReceiptInput />} />
+          <Route path="/sales"              element={<SalesInput />} />
+          <Route path="/dashboard"          element={<Dashboard />} />
+          <Route path="/ledger"             element={<LedgerList />} />
+          <Route path="/tax"                element={<TaxReport />} />
+          <Route path="/etax"               element={<ETaxHelper />} />
+          <Route path="/settings/prorate"   element={<ProRateSettings />} />
+          <Route path="/depreciation"       element={<DepreciationManager />} />
+          {/* 書類関連 */}
+          <Route path="/documents"          element={<DocumentList />} />
+          <Route path="/documents/new"      element={<DocumentCreator />} />
+          <Route path="/documents/:id/print" element={<DocumentPrint />} />
+          <Route path="/documents/settings" element={<IssuerProfileSettings />} />
+          <Route path="*"                   element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </BrowserRouter>
