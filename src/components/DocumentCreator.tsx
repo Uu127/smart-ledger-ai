@@ -1,304 +1,181 @@
-// src/components/DocumentCreator.tsx
+// src/components/DocumentList.tsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Trash2, CheckCircle2, FileText } from "lucide-react";
-import { useDocuments, useIssuerProfile } from "@/hooks/useDocuments";
-import {
-  DOCUMENT_TYPE_LABELS, calcDocument, generateDocumentNumber,
-  type DocumentType, type DocumentItem,
-} from "@/types/document";
+import { FileText, Trash2, Printer, Building2, Receipt, TrendingUp, Package, ClipboardList } from "lucide-react";
+import { useDocuments } from "@/hooks/useDocuments";
+import { DOCUMENT_TYPE_LABELS, type DocumentType, type BusinessDocument } from "@/types/document";
 
-const DOC_TYPES: DocumentType[] = ["invoice", "receipt", "estimate", "delivery"];
-const TAX_RATES = [10, 8, 0] as const;
-const UNITS = ["式", "個", "本", "枚", "冊", "時間", "日", "月", "件", "回"];
+const TYPE_COLORS: Record<DocumentType, string> = {
+  invoice:  "bg-blue-100 text-blue-700",
+  receipt:  "bg-green-100 text-green-700",
+  estimate: "bg-amber-100 text-amber-700",
+  delivery: "bg-purple-100 text-purple-700",
+};
 
-function newItem(): DocumentItem {
-  return {
-    id: crypto.randomUUID(),
-    description: "",
-    quantity: 1,
-    unit: "式",
-    unitPrice: 0,
-    taxRate: 10,
-  };
-}
+const TYPE_ICONS: Record<DocumentType, React.ElementType> = {
+  invoice:  TrendingUp,
+  receipt:  Receipt,
+  estimate: ClipboardList,
+  delivery: Package,
+};
 
-export function DocumentCreator() {
+const TYPE_BG: Record<DocumentType, string> = {
+  invoice:  "bg-blue-500",
+  receipt:  "bg-green-500",
+  estimate: "bg-amber-500",
+  delivery: "bg-purple-500",
+};
+
+const STATUS_LABELS = {
+  draft: { label: "下書き",   color: "bg-slate-100 text-slate-500" },
+  sent:  { label: "送付済み", color: "bg-blue-100 text-blue-600"   },
+  paid:  { label: "入金済み", color: "bg-green-100 text-green-600" },
+};
+
+export function DocumentList() {
   const navigate = useNavigate();
-  const { documents, addDocument } = useDocuments();
-  const { profile } = useIssuerProfile();
+  const { documents, loading, deleteDocument, updateDocument } = useDocuments();
+  const [filter, setFilter] = useState<DocumentType | "all">("all");
 
-  const [type, setType]           = useState<DocumentType>("invoice");
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().slice(0, 10));
-  const [dueDate, setDueDate]     = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const [clientName, setClientName]     = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [clientDept, setClientDept]     = useState("");
-  const [items, setItems]         = useState<DocumentItem[]>([newItem()]);
-  const [notes, setNotes]         = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const filtered = filter === "all" ? documents : documents.filter(d => d.type === filter);
 
-  // 書類番号を自動生成
-  const docNumber = generateDocumentNumber(type, documents.filter(d => d.type === type).length);
-
-  const calc = calcDocument(items);
-
-  const addItem = () => setItems(prev => [...prev, newItem()]);
-  const removeItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
-  const updateItem = (id: string, key: keyof DocumentItem, value: string | number) =>
-    setItems(prev => prev.map(i => i.id === id ? { ...i, [key]: value } : i));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientName || items.every(i => !i.description)) return;
-
-    setSubmitted(true);
-    await addDocument({
-      type,
-      documentNumber: docNumber,
-      issueDate,
-      dueDate:      type === "invoice" ? dueDate   : undefined,
-      deliveryDate: (type === "delivery" || type === "receipt") ? deliveryDate : undefined,
-      issuerName:   profile.name,
-      issuerAddress: profile.address,
-      issuerPhone:   profile.phone,
-      issuerEmail:   profile.email,
-      invoiceRegistrationNo: profile.invoiceRegistrationNo,
-      clientName,
-      clientAddress,
-      clientDepartment: clientDept,
-      items,
-      subtotal:  calc.subtotal,
-      tax10:     calc.tax10Amount,
-      tax8:      calc.tax8Amount,
-      total:     calc.total,
-      notes,
-      status: "draft",
+  // 請求書から領収書を作成
+  const createReceiptFromInvoice = (invoice: BusinessDocument) => {
+    const params = new URLSearchParams({
+      from: invoice.id,
+      type: "receipt",
     });
-
-    setTimeout(() => navigate("/documents"), 800);
+    navigate(`/documents/new?${params.toString()}`);
   };
-
-  const inputClass = "w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400";
-  const labelClass = "text-[10px] font-black text-slate-400 uppercase";
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="p-4 space-y-5 pb-32">
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3 }}
+      className="p-4 space-y-4 pb-24">
 
       {/* タイトル */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white">
-        <div className="flex items-center gap-3">
-          <div className="bg-white/10 p-2 rounded-xl"><FileText className="w-5 h-5" /></div>
-          <div>
-            <h2 className="text-sm font-black">書類を作成</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Document Creator</p>
-          </div>
+      <div className="flex items-center justify-between px-2">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900">書類</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">請求書・領収書 等</p>
         </div>
+        {/* 自社情報ボタン */}
+        <Link to="/documents/settings"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-black active:scale-95 transition-all hover:bg-slate-200">
+          <Building2 className="w-4 h-4" />
+          自社情報
+        </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {/* 書類作成ボタン（4種類） */}
+      <div className="grid grid-cols-2 gap-3">
+        {(["invoice", "receipt", "estimate", "delivery"] as DocumentType[]).map(t => {
+          const Icon = TYPE_ICONS[t];
+          return (
+            <Link key={t} to={`/documents/new?type=${t}`}
+              className={`${TYPE_BG[t]} rounded-2xl p-4 text-white flex items-center gap-3 active:scale-95 transition-all shadow-sm`}>
+              <div className="bg-white/20 p-2 rounded-xl shrink-0">
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-black">{DOCUMENT_TYPE_LABELS[t]}</p>
+                <p className="text-[9px] font-bold opacity-80">新規作成</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
 
-        {/* 書類種別 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-3">
-          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">書類の種類</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {DOC_TYPES.map(t => (
-              <button key={t} type="button" onClick={() => setType(t)}
-                className={`py-3 rounded-xl text-sm font-black transition-all active:scale-95 border-2 ${
-                  type === t ? "border-emerald-400 bg-emerald-50 text-emerald-700" : "border-slate-100 bg-slate-50 text-slate-500"
-                }`}>
-                {DOCUMENT_TYPE_LABELS[t]}
-              </button>
-            ))}
-          </div>
+      {/* フィルタータブ */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {(["all", "invoice", "receipt", "estimate", "delivery"] as const).map(t => (
+          <button key={t} onClick={() => setFilter(t)}
+            className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
+              filter === t ? "bg-slate-900 text-white" : "bg-white text-slate-500 border border-slate-100"
+            }`}>
+            {t === "all" ? "すべて" : DOCUMENT_TYPE_LABELS[t]}
+          </button>
+        ))}
+      </div>
+
+      {loading && (
+        <div className="py-10 flex justify-center">
+          <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-slate-500 animate-spin" />
         </div>
+      )}
 
-        {/* 基本情報 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-4">
-          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">基本情報</h3>
+      {!loading && filtered.length === 0 && (
+        <div className="py-16 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
+          <FileText className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+          <p className="text-sm font-bold text-slate-300">書類がありません</p>
+          <p className="text-xs text-slate-200 mt-1">上のボタンから作成してください</p>
+        </div>
+      )}
 
-          <div className="flex justify-between items-center bg-slate-50 rounded-xl p-3">
-            <span className={labelClass}>書類番号</span>
-            <span className="text-sm font-black text-slate-700">{docNumber}</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className={labelClass}>発行日</label>
-              <input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)}
-                required className={inputClass} />
+      {/* 書類リスト */}
+      <div className="space-y-3">
+        {filtered.map(doc => (
+          <div key={doc.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${TYPE_COLORS[doc.type]}`}>
+                  {DOCUMENT_TYPE_LABELS[doc.type]}
+                </span>
+                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${STATUS_LABELS[doc.status].color}`}>
+                  {STATUS_LABELS[doc.status].label}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                <Link to={`/documents/${doc.id}/print`}
+                  className="p-2 text-slate-300 hover:text-slate-600 active:scale-90 transition-all">
+                  <Printer className="w-4 h-4" />
+                </Link>
+                <button onClick={() => {
+                  if (confirm("この書類を削除しますか？")) deleteDocument(doc.id);
+                }}
+                  className="p-2 text-slate-300 hover:text-red-400 active:scale-90 transition-all">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            {type === "invoice" && (
-              <div className="space-y-1">
-                <label className={labelClass}>支払期限</label>
-                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                  className={inputClass} />
-              </div>
-            )}
-            {(type === "delivery" || type === "receipt") && (
-              <div className="space-y-1">
-                <label className={labelClass}>納品日 / 受領日</label>
-                <input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)}
-                  className={inputClass} />
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* 宛先 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-4">
-          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">宛先</h3>
-          <div className="space-y-1">
-            <label className={labelClass}>会社名 / 氏名 *</label>
-            <input type="text" value={clientName} onChange={e => setClientName(e.target.value)}
-              placeholder="例: 株式会社〇〇" required className={inputClass} />
-          </div>
-          <div className="space-y-1">
-            <label className={labelClass}>部署名</label>
-            <input type="text" value={clientDept} onChange={e => setClientDept(e.target.value)}
-              placeholder="例: 経理部 御中" className={inputClass} />
-          </div>
-          <div className="space-y-1">
-            <label className={labelClass}>住所</label>
-            <input type="text" value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-              placeholder="例: 東京都〇〇区..." className={inputClass} />
-          </div>
-        </div>
+            <p className="font-black text-slate-800 text-sm mb-1">{doc.clientName} 御中</p>
+            <p className="text-[10px] font-bold text-slate-400 mb-3">
+              {doc.documentNumber}　{doc.issueDate}
+            </p>
 
-        {/* 品目 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">品目・内容</h3>
-            <button type="button" onClick={addItem}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-black active:scale-95 transition-all">
-              <Plus className="w-3.5 h-3.5" /> 追加
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {items.map((item, idx) => (
-              <div key={item.id} className="bg-slate-50 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-slate-400">品目 {idx + 1}</span>
-                  {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(item.id)}
-                      className="p-1 text-slate-300 hover:text-red-400 transition-colors active:scale-90">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className={labelClass}>品目・内容</label>
-                  <input type="text" value={item.description}
-                    onChange={e => updateItem(item.id, "description", e.target.value)}
-                    placeholder="例: Webサイト制作費" required
-                    className="w-full p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <label className={labelClass}>数量</label>
-                    <input type="number" value={item.quantity} min={0} step={0.5}
-                      onChange={e => updateItem(item.id, "quantity", Number(e.target.value))}
-                      className="w-full p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className={labelClass}>単位</label>
-                    <select value={item.unit} onChange={e => updateItem(item.id, "unit", e.target.value)}
-                      className="w-full p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                      {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className={labelClass}>税率</label>
-                    <select value={item.taxRate}
-                      onChange={e => updateItem(item.id, "taxRate", Number(e.target.value) as 10 | 8 | 0)}
-                      className="w-full p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                      {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className={labelClass}>単価（税抜）</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-black">¥</span>
-                    <input type="number" inputMode="numeric" value={item.unitPrice} min={0}
-                      onChange={e => updateItem(item.id, "unitPrice", Number(e.target.value))}
-                      className="w-full pl-7 p-3 rounded-xl bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-                  </div>
-                </div>
-
-                {/* 小計 */}
-                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-400">小計（税抜）</span>
-                  <span className="text-sm font-black text-slate-700">
-                    ¥{(item.quantity * item.unitPrice).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 合計金額 */}
-          <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
-            <div className="flex justify-between text-xs font-bold text-slate-600">
-              <span>小計（税抜）</span>
-              <span>¥{calc.subtotal.toLocaleString()}</span>
-            </div>
-            {calc.tax10Amount > 0 && (
-              <div className="flex justify-between text-xs font-bold text-slate-500">
-                <span>消費税（10%）</span>
-                <span>¥{calc.tax10Amount.toLocaleString()}</span>
-              </div>
-            )}
-            {calc.tax8Amount > 0 && (
-              <div className="flex justify-between text-xs font-bold text-slate-500">
-                <span>消費税（8% 軽減税率）</span>
-                <span>¥{calc.tax8Amount.toLocaleString()}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center pt-2 border-t border-emerald-200">
-              <span className="text-sm font-black text-slate-800">合計金額（税込）</span>
-              <span className="text-xl font-black text-emerald-700">
-                ¥{calc.total.toLocaleString()}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xl font-black text-slate-900">
+                <span className="text-xs mr-0.5">¥</span>
+                {doc.total.toLocaleString()}
               </span>
+
+              <div className="flex gap-1.5 flex-wrap">
+                {/* 請求書→領収書の変換ボタン */}
+                {doc.type === "invoice" && doc.status !== "draft" && (
+                  <button onClick={() => createReceiptFromInvoice(doc)}
+                    className="text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-green-50 text-green-600 active:scale-95 transition-all">
+                    領収書を作成
+                  </button>
+                )}
+                {doc.status === "draft" && (
+                  <button onClick={() => updateDocument(doc.id, { status: "sent" })}
+                    className="text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 active:scale-95 transition-all">
+                    送付済みにする
+                  </button>
+                )}
+                {doc.status === "sent" && doc.type === "invoice" && (
+                  <button onClick={() => updateDocument(doc.id, { status: "paid" })}
+                    className="text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-green-50 text-green-600 active:scale-95 transition-all">
+                    入金済みにする
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* 備考 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-3">
-          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">備考・振込先</h3>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder={`例: お支払いは発行日より30日以内にお願いいたします。\n振込先: 〇〇銀行 〇〇支店 普通 1234567 ヤマダ タロウ`}
-            rows={4}
-            className="w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
-          {profile.bankName && !notes && (
-            <button type="button"
-              onClick={() => setNotes(`振込先: ${profile.bankName} ${profile.bankBranch} ${profile.bankAccountType} ${profile.bankAccountNo} ${profile.bankAccountHolder}`)}
-              className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
-              振込先を自動入力
-            </button>
-          )}
-        </div>
-
-        {/* 保存ボタン */}
-        <button type="submit" disabled={!clientName}
-          className={`w-full py-5 rounded-2xl font-black text-white transition-all flex items-center justify-center gap-2
-            ${!clientName ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-              : submitted ? "bg-green-500 shadow-lg shadow-green-200"
-              : "bg-slate-900 shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-95"}`}>
-          {submitted
-            ? <><CheckCircle2 className="w-6 h-6" /> 保存しました！</>
-            : `${DOCUMENT_TYPE_LABELS[type]}を保存する`
-          }
-        </button>
-      </form>
+        ))}
+      </div>
     </motion.div>
   );
 }
