@@ -1,5 +1,5 @@
 // src/components/DocumentCreator.tsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Trash2, CheckCircle2, FileText } from "lucide-react";

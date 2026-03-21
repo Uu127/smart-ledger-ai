@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Plus, Trash2, Printer, ChevronRight, Settings } from "lucide-react";
+import { FileText, Plus, Trash2, Printer, Settings } from "lucide-react";
 import { useDocuments } from "@/hooks/useDocuments";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/types/document";
 
