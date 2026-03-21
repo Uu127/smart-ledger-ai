@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Printer } from "lucide-react";
 import { useDocuments } from "@/hooks/useDocuments";
-import { DOCUMENT_TYPE_LABELS } from "@/types/document";
+import type { } from "@/types/document";
 
 function yen(n: number) { return `¥${n.toLocaleString()}`; }
 

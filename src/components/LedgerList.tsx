@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, ChevronDown, ChevronRight, Pencil, X, CheckCircle2 } from "lucide-react";
 import { useLedger } from "@/hooks/useLedger";
-import { DEBIT_ACCOUNTS_BY_GROUP, CREDIT_ACCOUNTS, DEBIT_ACCOUNT_LABELS } from "@/constants/accounts";
+import { DEBIT_ACCOUNTS_BY_GROUP, CREDIT_ACCOUNTS } from "@/constants/accounts";
 import type { LedgerEntry, DebitAccountLabel, CreditAccountLabel } from "@/types/ledger";
 
 // ── CSV出力 ───────────────────────────────────────────────
