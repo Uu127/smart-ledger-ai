@@ -14,9 +14,8 @@ export interface DocumentItem {
   description: string;
   quantity: number;
   unit: string;
-  unitPrice: number;          // 税抜単価（taxInclusive=trueの場合は税込単価）
+  unitPrice: number;
   taxRate: 10 | 8 | 0;
-  taxInclusive?: boolean;     // true = unitPriceが税込金額
 }
 
 export interface BusinessDocument {
@@ -26,20 +25,38 @@ export interface BusinessDocument {
   issueDate: string;
   dueDate?: string;
   deliveryDate?: string;
+
+  // 発行者
   issuerName: string;
   issuerAddress?: string;
   issuerPhone?: string;
   issuerEmail?: string;
   invoiceRegistrationNo?: string;
+
+  // 振込先（専用フィールド）
+  bankName?: string;
+  bankBranch?: string;
+  bankAccountType?: string;
+  bankAccountNo?: string;
+  bankAccountHolder?: string;
+
+  // 宛先
   clientName: string;
   clientAddress?: string;
   clientDepartment?: string;
+
+  // 品目
   items: DocumentItem[];
-  subtotal: number;           // 税抜合計
+
+  // 金額
+  subtotal: number;
   tax10: number;
   tax8: number;
-  total: number;              // 税込合計
+  total: number;
+
+  // 備考（振込先とは別）
   notes?: string;
+
   status: "draft" | "sent" | "paid";
   createdAt: string;
   updatedAt: string;
@@ -65,47 +82,25 @@ export interface IssuerProfile {
   bankAccountHolder?: string;
 }
 
-// ── 計算ロジック ──────────────────────────────────────────
 export function calcDocument(items: DocumentItem[]): DocumentCalculation {
   let subtotal    = 0;
   let tax10Amount = 0;
   let tax8Amount  = 0;
 
   for (const item of items) {
-    if (item.taxInclusive) {
-      // 税込入力の場合：税込合計から税抜・税額を逆算
-      // Math.round を使って ¥400,000 → ¥400,000 になるよう保証
-      const taxIncLineTotal = item.quantity * item.unitPrice;
-      const taxExLineTotal  = Math.round(taxIncLineTotal / (1 + item.taxRate / 100));
-      const taxAmount       = taxIncLineTotal - taxExLineTotal;
-      subtotal += taxExLineTotal;
-      if (item.taxRate === 10) tax10Amount += taxAmount;
-      if (item.taxRate === 8)  tax8Amount  += taxAmount;
-    } else {
-      // 税抜入力の場合：通常計算
-      const lineTotal = item.quantity * item.unitPrice;
-      subtotal += lineTotal;
-      if (item.taxRate === 10) tax10Amount += Math.floor(lineTotal * 0.1);
-      if (item.taxRate === 8)  tax8Amount  += Math.floor(lineTotal * 0.08);
-    }
+    const lineTotal = item.quantity * item.unitPrice;
+    subtotal += lineTotal;
+    if (item.taxRate === 10) tax10Amount += Math.floor(lineTotal * 0.1);
+    if (item.taxRate === 8)  tax8Amount  += Math.floor(lineTotal * 0.08);
   }
 
-  return {
-    subtotal,
-    tax10Amount,
-    tax8Amount,
-    total: subtotal + tax10Amount + tax8Amount,
-  };
+  return { subtotal, tax10Amount, tax8Amount, total: subtotal + tax10Amount + tax8Amount };
 }
 
 export function generateDocumentNumber(type: DocumentType, count: number): string {
   const prefix: Record<DocumentType, string> = {
-    invoice:  "INV",
-    receipt:  "REC",
-    estimate: "EST",
-    delivery: "DEL",
+    invoice: "INV", receipt: "REC", estimate: "EST", delivery: "DEL",
   };
   const year = new Date().getFullYear();
-  const seq  = String(count + 1).padStart(3, "0");
-  return `${prefix[type]}-${year}-${seq}`;
+  return `${prefix[type]}-${year}-${String(count + 1).padStart(3, "0")}`;
 }
