@@ -1,5 +1,5 @@
 // src/components/DocumentCreator.tsx
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Trash2, CheckCircle2, FileText, ToggleLeft, ToggleRight } from "lucide-react";
