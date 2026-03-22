@@ -13,18 +13,18 @@ export function ReceiptInput() {
   const navigate = useNavigate();
   const { parse, status, result, error, reset } = useReceiptParse();
   const { addLedgerEntry } = useLedger();
-  const cameraRef  = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
-  const [isOpen, setIsOpen]           = useState(false);
-  const [showAsset, setShowAsset]     = useState(false);
-  const [date, setDate]               = useState("");
-  const [debitAccount, setDebit]      = useState<DebitAccountLabel>("雑費");
-  const [creditAccount, setCredit]    = useState<CreditAccountLabel>("現金");
-  const [amount, setAmount]           = useState("");
-  const [description, setDesc]        = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [showAsset, setShowAsset] = useState(false);
+  const [date, setDate] = useState("");
+  const [debitAccount, setDebit] = useState<DebitAccountLabel>("雑費");
+  const [creditAccount, setCredit] = useState<CreditAccountLabel>("現金");
+  const [amount, setAmount] = useState("");
+  const [description, setDesc] = useState("");
   const [counterparty, setCounterparty] = useState("");
-  const [submitted, setSubmitted]     = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -71,12 +71,12 @@ export function ReceiptInput() {
     setTimeout(() => { setIsOpen(false); navigate("/ledger"); }, 800);
   };
 
-  const loading      = status === "loading";
-  const isLarge      = Number(amount) >= 100000;
-  const cardBg       = { backgroundColor: "var(--bg-card)", borderColor: "var(--border)" };
-  const inputStyle   = { backgroundColor: "var(--bg-input)", color: "var(--text-main)" };
-  const labelStyle   = { color: "var(--text-muted)" };
-  const inputClass   = "w-full p-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400";
+  const loading = status === "loading";
+  const isLarge = Number(amount) >= 100000;
+  const cardBg = { backgroundColor: "var(--bg-card)", borderColor: "var(--border)" };
+  const inputStyle = { backgroundColor: "var(--bg-input)", color: "var(--text-main)" };
+  const labelStyle = { color: "var(--text-muted)" };
+  const inputClass = "w-full p-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400";
 
   return (
     <div className="p-4 space-y-5 pb-32">
@@ -108,7 +108,7 @@ export function ReceiptInput() {
             <button key={label} type="button"
               onClick={() => { haptic(); ref.current?.click(); }}
               className="flex flex-col items-center justify-center gap-3 py-8 rounded-2xl border-2 border-dashed transition-all active:scale-95 hover:border-emerald-400 hover:text-emerald-600"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)", backgroundColor: "var(--bg-muted)" }}>
+              style={{ borderColor: "var(--border)", color: "var(--text-sub)", backgroundColor: "var(--bg-muted)" }}>
               <Icon className="w-6 h-6" />
               <span className="text-xs font-bold">{label}</span>
             </button>
@@ -121,7 +121,7 @@ export function ReceiptInput() {
           <Plus className="w-4 h-4" /> 手動で入力する
         </button>
 
-        <input ref={cameraRef}  type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
         <input ref={galleryRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
       </motion.section>
 
@@ -260,8 +260,8 @@ export function ReceiptInput() {
                           ${(!date || !amount)
                             ? "opacity-30 cursor-not-allowed"
                             : submitted
-                            ? "bg-emerald-500"
-                            : "bg-slate-900 dark:bg-slate-100 dark:text-slate-900 active:scale-95"
+                              ? "bg-emerald-500"
+                              : "bg-slate-900 dark:bg-slate-100 dark:text-slate-900 active:scale-95"
                           }`}
                         style={(!date || !amount) ? { backgroundColor: "var(--bg-input)", color: "var(--text-muted)" } : {}}>
                         {submitted
