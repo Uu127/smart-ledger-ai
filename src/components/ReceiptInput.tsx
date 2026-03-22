@@ -104,7 +104,7 @@ export function ReceiptInput() {
           {[
             { label: "カメラで撮影", icon: Camera, ref: cameraRef, capture: "environment" as const },
             { label: "アルバムから", icon: ImageIcon, ref: galleryRef, capture: undefined },
-          ].map(({ label, icon: Icon, ref, capture }) => (
+          ].map(({ label, icon: Icon, ref, }) => (
             <button key={label} type="button"
               onClick={() => { haptic(); ref.current?.click(); }}
               className="flex flex-col items-center justify-center gap-3 py-8 rounded-2xl border-2 border-dashed transition-all active:scale-95 hover:border-emerald-400 hover:text-emerald-600"
