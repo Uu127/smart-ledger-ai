@@ -1,7 +1,7 @@
 // src/components/Layout.tsx
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LogOut, Wallet, TrendingUp, History, Receipt, BarChart2, FileText, Moon, Sun } from "lucide-react";
+import { LogOut, Wallet, TrendingUp, History, Receipt, BarChart2, FileText, Moon, Sun, Bell } from "lucide-react";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
 interface LayoutProps {
@@ -17,7 +17,6 @@ const navItems = [
   { to: "/ledger",    label: "履歴",     icon: History    },
 ] as const;
 
-// ダークモード管理
 function useDarkMode() {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
@@ -28,15 +27,8 @@ function useDarkMode() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (isDark) {
-      root.classList.add("dark");
-      root.classList.remove("light");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      root.classList.add("light");
-      localStorage.setItem("theme", "light");
-    }
+    if (isDark) { root.classList.add("dark"); root.classList.remove("light"); localStorage.setItem("theme", "dark"); }
+    else        { root.classList.remove("dark"); root.classList.add("light"); localStorage.setItem("theme", "light"); }
   }, [isDark]);
 
   return { isDark, toggle: () => setIsDark(v => !v) };
@@ -57,13 +49,20 @@ export function Layout({ auth, children }: LayoutProps) {
           <div className="bg-gradient-to-br from-emerald-400 to-emerald-600 p-2 rounded-xl shadow-sm">
             <Wallet className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-lg font-black tracking-tight uppercase"
-            style={{ color: "var(--text-main)" }}>
+          <h1 className="text-lg font-black tracking-tight uppercase" style={{ color: "var(--text-main)" }}>
             Smart<span className="text-emerald-500">Ledger</span>
           </h1>
         </div>
+
         <div className="flex items-center gap-1">
-          {/* ダークモードトグル */}
+          {/* 通知設定 */}
+          <Link to="/settings/notifications"
+            className="p-2 rounded-xl transition-all active:scale-95"
+            style={{ color: "var(--text-muted)" }}
+            title="通知設定">
+            <Bell className="w-4 h-4" />
+          </Link>
+          {/* ダークモード */}
           <button onClick={toggle}
             className="p-2 rounded-xl transition-all active:scale-95"
             style={{ color: "var(--text-muted)" }}
@@ -80,10 +79,7 @@ export function Layout({ auth, children }: LayoutProps) {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="flex-1 pb-24 max-w-2xl mx-auto w-full">
-        {children}
-      </main>
+      <main className="flex-1 pb-24 max-w-2xl mx-auto w-full">{children}</main>
 
       <InstallPrompt />
 
@@ -100,9 +96,7 @@ export function Layout({ auth, children }: LayoutProps) {
                 style={{ color: isActive ? "var(--accent)" : "var(--text-muted)" }}>
                 <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""} transition-transform`} />
                 <span className="text-[9px] font-black tracking-[0.03em]">{label}</span>
-                {isActive && (
-                  <div className="absolute -top-[1px] w-8 h-0.5 bg-emerald-500 rounded-full" />
-                )}
+                {isActive && <div className="absolute -top-[1px] w-8 h-0.5 bg-emerald-500 rounded-full" />}
               </Link>
             );
           })}

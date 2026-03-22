@@ -17,6 +17,7 @@ import { DocumentList } from "@/components/DocumentList";
 import { DocumentCreator } from "@/components/DocumentCreator";
 import { DocumentPrint } from "@/components/DocumentPrint";
 import { IssuerProfileSettings } from "@/components/IssuerProfileSettings";
+import { NotificationSettings } from "@/components/NotificationSettings";
 import { hasLocalData, getLocalEntries, hasFirestoreData } from "@/lib/migration";
 
 function AuthenticatedApp() {
@@ -51,8 +52,8 @@ function AuthenticatedApp() {
           <Route path="/tax"                 element={<TaxReport />} />
           <Route path="/etax"                element={<ETaxHelper />} />
           <Route path="/settings/prorate"    element={<ProRateSettings />} />
+          <Route path="/settings/notifications" element={<NotificationSettings />} />
           <Route path="/depreciation"        element={<DepreciationManager />} />
-          {/* 書類 */}
           <Route path="/documents"           element={<DocumentList />} />
           <Route path="/documents/new"       element={<DocumentCreator />} />
           <Route path="/documents/:id/edit"  element={<DocumentCreator />} />
@@ -69,7 +70,7 @@ function AppGate() {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-dvh bg-slate-50 flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center" style={{ backgroundColor: "var(--bg-base)" }}>
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-full border-4 border-emerald-200 border-t-emerald-500 animate-spin" />
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading...</p>
