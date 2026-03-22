@@ -1,7 +1,7 @@
 // src/components/NotificationSettings.tsx
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, BellOff, CheckCircle2, AlertCircle, FileText, Calendar, Clock } from "lucide-react";
+import { Bell, BellOff, AlertCircle, FileText, Calendar, Clock } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 
 interface ToggleRowProps {
@@ -37,8 +37,6 @@ function ToggleRow({ icon: Icon, label, desc, value, onChange, disabled }: Toggl
 
 export function NotificationSettings() {
   const { settings, loading, permission, enableNotifications, disableNotifications, saveSettings } = useNotifications();
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
   const [enabling, setEnabling] = useState(false);
 
   const handleMasterToggle = async () => {
@@ -50,14 +48,6 @@ export function NotificationSettings() {
       setEnabling(false);
       if (!ok) return;
     }
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await saveSettings(settings);
-    setSaved(true);
-    setSaving(false);
-    setTimeout(() => setSaved(false), 2000);
   };
 
   const updateSetting = (key: keyof typeof settings, value: boolean) => {

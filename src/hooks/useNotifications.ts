@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { db, app } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
+import { getApp } from "firebase/app";
 import { useAuth } from "@/contexts/AuthContext";
 
 const VAPID_KEY = "BD6oDMsS2vD7e_rUhaM7b3b_87Z0xGC6oqDqljyoieapz3QgPHdqm9GHNdy8SYeGcrTRjFmuk1szZooThNix4xM";
@@ -53,7 +54,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
     try {
-      const messaging = getMessaging(app);
+      const messaging = getMessaging(getApp());
       const unsub = onMessage(messaging, (payload) => {
         const { title, body } = payload.notification ?? {};
         if (title) new Notification(title, { body, icon: "/icon-192.png" });
@@ -77,7 +78,7 @@ export function useNotifications() {
       setPermission(perm);
       if (perm !== "granted") return false;
 
-      const messaging = getMessaging(app);
+      const messaging = getMessaging(getApp());
       const token     = await getToken(messaging, { vapidKey: VAPID_KEY });
 
       const next: NotificationSettings = { ...settings, enabled: true, fcmToken: token };
