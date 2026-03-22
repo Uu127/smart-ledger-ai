@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Trash2, Printer, Building2, Receipt, TrendingUp, Package, ClipboardList } from "lucide-react";
+import { FileText, Trash2, Printer, Building2, Receipt, TrendingUp, Package, ClipboardList, Pencil } from "lucide-react";
 import { useDocuments } from "@/hooks/useDocuments";
 import { DOCUMENT_TYPE_LABELS, type DocumentType, type BusinessDocument } from "@/types/document";
 
@@ -40,13 +40,8 @@ export function DocumentList() {
 
   const filtered = filter === "all" ? documents : documents.filter(d => d.type === filter);
 
-  // 請求書から領収書を作成
   const createReceiptFromInvoice = (invoice: BusinessDocument) => {
-    const params = new URLSearchParams({
-      from: invoice.id,
-      type: "receipt",
-    });
-    navigate(`/documents/new?${params.toString()}`);
+    navigate(`/documents/new?from=${invoice.id}&type=receipt`);
   };
 
   return (
@@ -60,24 +55,20 @@ export function DocumentList() {
           <h2 className="text-2xl font-black text-slate-900">書類</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">請求書・領収書 等</p>
         </div>
-        {/* 自社情報ボタン */}
         <Link to="/documents/settings"
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-black active:scale-95 transition-all hover:bg-slate-200">
-          <Building2 className="w-4 h-4" />
-          自社情報
+          <Building2 className="w-4 h-4" /> 自社情報
         </Link>
       </div>
 
-      {/* 書類作成ボタン（4種類） */}
+      {/* 書類作成ボタン */}
       <div className="grid grid-cols-2 gap-3">
         {(["invoice", "receipt", "estimate", "delivery"] as DocumentType[]).map(t => {
           const Icon = TYPE_ICONS[t];
           return (
             <Link key={t} to={`/documents/new?type=${t}`}
               className={`${TYPE_BG[t]} rounded-2xl p-4 text-white flex items-center gap-3 active:scale-95 transition-all shadow-sm`}>
-              <div className="bg-white/20 p-2 rounded-xl shrink-0">
-                <Icon className="w-4 h-4" />
-              </div>
+              <div className="bg-white/20 p-2 rounded-xl shrink-0"><Icon className="w-4 h-4" /></div>
               <div>
                 <p className="text-xs font-black">{DOCUMENT_TYPE_LABELS[t]}</p>
                 <p className="text-[9px] font-bold opacity-80">新規作成</p>
@@ -87,7 +78,7 @@ export function DocumentList() {
         })}
       </div>
 
-      {/* フィルタータブ */}
+      {/* フィルター */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {(["all", "invoice", "receipt", "estimate", "delivery"] as const).map(t => (
           <button key={t} onClick={() => setFilter(t)}
@@ -127,14 +118,20 @@ export function DocumentList() {
                 </span>
               </div>
               <div className="flex gap-1">
+                {/* 編集ボタン */}
+                <Link to={`/documents/${doc.id}/edit`}
+                  className="p-2 text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg active:scale-90 transition-all">
+                  <Pencil className="w-4 h-4" />
+                </Link>
+                {/* 印刷ボタン */}
                 <Link to={`/documents/${doc.id}/print`}
                   className="p-2 text-slate-300 hover:text-slate-600 active:scale-90 transition-all">
                   <Printer className="w-4 h-4" />
                 </Link>
+                {/* 削除ボタン */}
                 <button onClick={() => {
                   if (confirm("この書類を削除しますか？")) deleteDocument(doc.id);
-                }}
-                  className="p-2 text-slate-300 hover:text-red-400 active:scale-90 transition-all">
+                }} className="p-2 text-slate-300 hover:text-red-400 active:scale-90 transition-all">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -147,12 +144,10 @@ export function DocumentList() {
 
             <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-xl font-black text-slate-900">
-                <span className="text-xs mr-0.5">¥</span>
-                {doc.total.toLocaleString()}
+                <span className="text-xs mr-0.5">¥</span>{doc.total.toLocaleString()}
               </span>
 
               <div className="flex gap-1.5 flex-wrap">
-                {/* 請求書→領収書の変換ボタン */}
                 {doc.type === "invoice" && doc.status !== "draft" && (
                   <button onClick={() => createReceiptFromInvoice(doc)}
                     className="text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-green-50 text-green-600 active:scale-95 transition-all">

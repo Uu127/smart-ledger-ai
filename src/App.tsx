@@ -44,20 +44,21 @@ function AuthenticatedApp() {
       )}
       <Layout auth={{ logout }}>
         <Routes>
-          <Route path="/"                   element={<ReceiptInput />} />
-          <Route path="/sales"              element={<SalesInput />} />
-          <Route path="/dashboard"          element={<Dashboard />} />
-          <Route path="/ledger"             element={<LedgerList />} />
-          <Route path="/tax"                element={<TaxReport />} />
-          <Route path="/etax"               element={<ETaxHelper />} />
-          <Route path="/settings/prorate"   element={<ProRateSettings />} />
-          <Route path="/depreciation"       element={<DepreciationManager />} />
-          {/* 書類関連 */}
-          <Route path="/documents"          element={<DocumentList />} />
-          <Route path="/documents/new"      element={<DocumentCreator />} />
+          <Route path="/"                    element={<ReceiptInput />} />
+          <Route path="/sales"               element={<SalesInput />} />
+          <Route path="/dashboard"           element={<Dashboard />} />
+          <Route path="/ledger"              element={<LedgerList />} />
+          <Route path="/tax"                 element={<TaxReport />} />
+          <Route path="/etax"                element={<ETaxHelper />} />
+          <Route path="/settings/prorate"    element={<ProRateSettings />} />
+          <Route path="/depreciation"        element={<DepreciationManager />} />
+          {/* 書類 */}
+          <Route path="/documents"           element={<DocumentList />} />
+          <Route path="/documents/new"       element={<DocumentCreator />} />
+          <Route path="/documents/:id/edit"  element={<DocumentCreator />} />
           <Route path="/documents/:id/print" element={<DocumentPrint />} />
-          <Route path="/documents/settings" element={<IssuerProfileSettings />} />
-          <Route path="*"                   element={<Navigate to="/" replace />} />
+          <Route path="/documents/settings"  element={<IssuerProfileSettings />} />
+          <Route path="*"                    element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </BrowserRouter>

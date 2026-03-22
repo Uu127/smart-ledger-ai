@@ -1,6 +1,6 @@
 // src/components/DocumentCreator.tsx
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Trash2, CheckCircle2, FileText, ToggleLeft, ToggleRight } from "lucide-react";
 import { useDocuments, useIssuerProfile } from "@/hooks/useDocuments";
@@ -22,43 +22,87 @@ function taxIncToEx(taxInc: number, rate: 10 | 8 | 0): number {
 }
 
 export function DocumentCreator() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { documents, addDocument } = useDocuments();
+  const navigate        = useNavigate();
+  const [searchParams]  = useSearchParams();
+  const { id: editId }  = useParams<{ id: string }>(); // 編集モード時はidが入る
+  const { documents, addDocument, updateDocument } = useDocuments();
   const { profile } = useIssuerProfile();
 
-  const initialType = (searchParams.get("type") as DocumentType) ?? "invoice";
-  const fromId      = searchParams.get("from");
-  const sourceDoc   = fromId ? documents.find(d => d.id === fromId) : null;
+  const isEdit    = !!editId;
+  const editDoc   = isEdit ? documents.find(d => d.id === editId) : null;
 
-  const [type, setType]                   = useState<DocumentType>(initialType);
-  const [issueDate, setIssueDate]         = useState(new Date().toISOString().slice(0, 10));
-  const [dueDate, setDueDate]             = useState("");
-  const [deliveryDate, setDeliveryDate]   = useState(sourceDoc?.issueDate ?? "");
-  const [clientName, setClientName]       = useState(sourceDoc?.clientName ?? "");
-  const [clientAddress, setClientAddress] = useState(sourceDoc?.clientAddress ?? "");
-  const [clientDept, setClientDept]       = useState(sourceDoc?.clientDepartment ?? "");
-  const [items, setItems]                 = useState<DocumentItem[]>(sourceDoc?.items ?? [newItem()]);
-  const [notes, setNotes]                 = useState(sourceDoc?.notes ?? "");
-  const [submitted, setSubmitted]         = useState(false);
-  const [taxIncMode, setTaxIncMode]       = useState(false);
+  const initialType = (searchParams.get("type") as DocumentType)
+    ?? editDoc?.type ?? "invoice";
+  const fromId   = searchParams.get("from");
+  const sourceDoc = fromId ? documents.find(d => d.id === fromId) : null;
 
-  // 振込先（自社情報から自動セット）
-  const [bankName, setBankName]               = useState(profile.bankName ?? "");
-  const [bankBranch, setBankBranch]           = useState(profile.bankBranch ?? "");
-  const [bankAccountType, setBankAccountType] = useState(profile.bankAccountType ?? "普通");
-  const [bankAccountNo, setBankAccountNo]     = useState(profile.bankAccountNo ?? "");
-  const [bankAccountHolder, setBankAccountHolder] = useState(profile.bankAccountHolder ?? "");
+  // 初期値：編集モードなら既存データ、引き継ぎなら元書類、新規なら空
+  const base = editDoc ?? sourceDoc;
 
-  const docNumber = generateDocumentNumber(type, documents.filter(d => d.type === type).length);
-  const calc      = calcDocument(items);
+  const [initialized, setInitialized] = useState(false);
+  const [type, setType]               = useState<DocumentType>(initialType);
+  const [issueDate, setIssueDate]     = useState(new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate]         = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [clientName, setClientName]   = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [clientDept, setClientDept]   = useState("");
+  const [items, setItems]             = useState<DocumentItem[]>([newItem()]);
+  const [notes, setNotes]             = useState("");
+  const [submitted, setSubmitted]     = useState(false);
+  const [taxIncMode, setTaxIncMode]   = useState(false);
+  const [bankName, setBankName]               = useState("");
+  const [bankBranch, setBankBranch]           = useState("");
+  const [bankAccountType, setBankAccountType] = useState("普通");
+  const [bankAccountNo, setBankAccountNo]     = useState("");
+  const [bankAccountHolder, setBankAccountHolder] = useState("");
+
+  // 編集データが読み込まれたら初期値をセット
+  useEffect(() => {
+    if (initialized) return;
+    if (isEdit && !editDoc) return; // まだ読み込み中
+
+    if (base) {
+      setType(base.type);
+      setIssueDate(base.issueDate ?? new Date().toISOString().slice(0, 10));
+      setDueDate(base.dueDate ?? "");
+      setDeliveryDate(base.deliveryDate ?? "");
+      setClientName(base.clientName ?? "");
+      setClientAddress(base.clientAddress ?? "");
+      setClientDept(base.clientDepartment ?? "");
+      setItems(base.items?.length ? base.items : [newItem()]);
+      setNotes(base.notes ?? "");
+      setBankName(base.bankName ?? "");
+      setBankBranch(base.bankBranch ?? "");
+      setBankAccountType(base.bankAccountType ?? "普通");
+      setBankAccountNo(base.bankAccountNo ?? "");
+      setBankAccountHolder(base.bankAccountHolder ?? "");
+    }
+    setInitialized(true);
+  }, [base, editDoc, isEdit, initialized]);
+
+  // 新規作成 & 自社情報の初期セット（編集時はスキップ）
+  useEffect(() => {
+    if (!isEdit && !sourceDoc && profile.bankName && !initialized) {
+      setBankName(profile.bankName ?? "");
+      setBankBranch(profile.bankBranch ?? "");
+      setBankAccountType(profile.bankAccountType ?? "普通");
+      setBankAccountNo(profile.bankAccountNo ?? "");
+      setBankAccountHolder(profile.bankAccountHolder ?? "");
+    }
+  }, [profile, isEdit, sourceDoc, initialized]);
+
+  const docNumber = isEdit
+    ? (editDoc?.documentNumber ?? "")
+    : generateDocumentNumber(type, documents.filter(d => d.type === type).length);
+
+  const calc = calcDocument(items);
 
   const addItem    = () => setItems(prev => [...prev, newItem()]);
   const removeItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
   const updateItem = (id: string, key: keyof DocumentItem, value: string | number) =>
     setItems(prev => prev.map(i => i.id === id ? { ...i, [key]: value } : i));
 
-  // 自社情報から振込先を自動入力
   const fillBankFromProfile = () => {
     setBankName(profile.bankName ?? "");
     setBankBranch(profile.bankBranch ?? "");
@@ -71,15 +115,16 @@ export function DocumentCreator() {
     e.preventDefault();
     if (!clientName) return;
     setSubmitted(true);
-    await addDocument({
+
+    const data = {
       type, documentNumber: docNumber, issueDate,
       dueDate:      type === "invoice" ? dueDate : undefined,
       deliveryDate: (type === "delivery" || type === "receipt") ? deliveryDate : undefined,
-      issuerName:    profile.name,
-      issuerAddress: profile.address,
-      issuerPhone:   profile.phone,
-      issuerEmail:   profile.email,
-      invoiceRegistrationNo: profile.invoiceRegistrationNo,
+      issuerName:    profile.name || editDoc?.issuerName || "",
+      issuerAddress: profile.address || editDoc?.issuerAddress,
+      issuerPhone:   profile.phone  || editDoc?.issuerPhone,
+      issuerEmail:   profile.email  || editDoc?.issuerEmail,
+      invoiceRegistrationNo: profile.invoiceRegistrationNo || editDoc?.invoiceRegistrationNo,
       bankName:          bankName   || undefined,
       bankBranch:        bankBranch || undefined,
       bankAccountType:   bankAccountType || undefined,
@@ -93,8 +138,15 @@ export function DocumentCreator() {
       tax8:     calc.tax8Amount,
       total:    calc.total,
       notes,
-      status: "draft",
-    });
+      status: (isEdit ? editDoc?.status : "draft") ?? "draft",
+    };
+
+    if (isEdit && editId) {
+      await updateDocument(editId, data);
+    } else {
+      await addDocument(data);
+    }
+
     setTimeout(() => navigate("/documents"), 800);
   };
 
@@ -105,15 +157,27 @@ export function DocumentCreator() {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
       className="p-4 space-y-5 pb-32">
 
+      {/* タイトル */}
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white">
         <div className="flex items-center gap-3">
           <div className="bg-white/10 p-2 rounded-xl"><FileText className="w-5 h-5" /></div>
           <div>
-            <h2 className="text-sm font-black">書類を作成</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Document Creator</p>
+            <h2 className="text-sm font-black">
+              {isEdit ? `${DOCUMENT_TYPE_LABELS[type]}を編集` : "書類を作成"}
+            </h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+              {isEdit ? "Document Editor" : "Document Creator"}
+            </p>
           </div>
         </div>
-        {sourceDoc && (
+        {isEdit && editDoc && (
+          <div className="mt-2 bg-white/10 rounded-xl px-3 py-2">
+            <p className="text-[10px] font-bold text-slate-300">
+              {editDoc.documentNumber} を編集しています
+            </p>
+          </div>
+        )}
+        {sourceDoc && !isEdit && (
           <div className="mt-2 bg-white/10 rounded-xl px-3 py-2">
             <p className="text-[10px] font-bold text-slate-300">
               {sourceDoc.documentNumber} / {sourceDoc.clientName} の情報を引き継ぎました
@@ -124,19 +188,23 @@ export function DocumentCreator() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* 書類種別 */}
+        {/* 書類種別（編集時は変更不可） */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-3">
           <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">書類の種類</h3>
           <div className="grid grid-cols-2 gap-2">
             {DOC_TYPES.map(t => (
-              <button key={t} type="button" onClick={() => setType(t)}
-                className={`py-3 rounded-xl text-sm font-black transition-all active:scale-95 border-2 ${
-                  type === t ? "border-emerald-400 bg-emerald-50 text-emerald-700" : "border-slate-100 bg-slate-50 text-slate-500"
-                }`}>
+              <button key={t} type="button"
+                onClick={() => !isEdit && setType(t)}
+                className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${
+                  type === t
+                    ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                    : "border-slate-100 bg-slate-50 text-slate-400"
+                } ${isEdit ? "cursor-default" : "active:scale-95"}`}>
                 {DOCUMENT_TYPE_LABELS[t]}
               </button>
             ))}
           </div>
+          {isEdit && <p className="text-[10px] font-bold text-slate-400">書類の種類は編集できません</p>}
         </div>
 
         {/* 基本情報 */}
@@ -302,7 +370,7 @@ export function DocumentCreator() {
           </div>
         </div>
 
-        {/* 振込先（請求書・見積書のみ） */}
+        {/* 振込先 */}
         {(type === "invoice" || type === "estimate") && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50 space-y-4">
             <div className="flex items-center justify-between">
@@ -310,11 +378,10 @@ export function DocumentCreator() {
               {profile.bankName && (
                 <button type="button" onClick={fillBankFromProfile}
                   className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
-                  自社情報から自動入力
+                  自社情報から入力
                 </button>
               )}
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className={labelClass}>銀行名</label>
@@ -327,7 +394,6 @@ export function DocumentCreator() {
                   placeholder="〇〇支店" className={inputClass} />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className={labelClass}>口座種別</label>
@@ -344,14 +410,11 @@ export function DocumentCreator() {
                   placeholder="1234567" className={inputClass} />
               </div>
             </div>
-
             <div className="space-y-1">
               <label className={labelClass}>口座名義（カタカナ）</label>
               <input type="text" value={bankAccountHolder} onChange={e => setBankAccountHolder(e.target.value)}
                 placeholder="ヤマダ タロウ" className={inputClass} />
             </div>
-
-            {/* プレビュー */}
             {bankName && (
               <div className="bg-slate-50 rounded-xl p-3">
                 <p className="text-[10px] font-black text-slate-400 mb-1">印字プレビュー</p>
@@ -373,6 +436,7 @@ export function DocumentCreator() {
             className="w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
         </div>
 
+        {/* 保存ボタン */}
         <button type="submit" disabled={!clientName}
           className={`w-full py-5 rounded-2xl font-black text-white transition-all flex items-center justify-center gap-2
             ${!clientName
@@ -382,8 +446,8 @@ export function DocumentCreator() {
               : "bg-slate-900 shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-95"
             }`}>
           {submitted
-            ? <><CheckCircle2 className="w-6 h-6" /> 保存しました！</>
-            : `${DOCUMENT_TYPE_LABELS[type]}を保存する`
+            ? <><CheckCircle2 className="w-6 h-6" /> {isEdit ? "更新しました！" : "保存しました！"}</>
+            : isEdit ? `${DOCUMENT_TYPE_LABELS[type]}を更新する` : `${DOCUMENT_TYPE_LABELS[type]}を保存する`
           }
         </button>
       </form>
