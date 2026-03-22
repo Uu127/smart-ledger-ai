@@ -1,6 +1,64 @@
 @import "tailwindcss";
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   カラートークン（ライト / ダーク）
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+  --bg-base:    #f8fafc;
+  --bg-card:    #ffffff;
+  --bg-input:   #f1f5f9;
+  --bg-muted:   #f1f5f9;
+  --border:     #e2e8f0;
+  --text-main:  #0f172a;
+  --text-sub:   #475569;
+  --text-muted: #94a3b8;
+  --nav-bg:     rgba(255,255,255,0.92);
+  --header-bg:  rgba(255,255,255,0.85);
+  --accent:     #10b981;
+  --accent-sub: #ecfdf5;
+}
+
+.dark {
+  --bg-base:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-input:   #334155;
+  --bg-muted:   #1e293b;
+  --border:     #334155;
+  --text-main:  #f1f5f9;
+  --text-sub:   #94a3b8;
+  --text-muted: #64748b;
+  --nav-bg:     rgba(15,23,42,0.95);
+  --header-bg:  rgba(15,23,42,0.90);
+  --accent:     #10b981;
+  --accent-sub: #064e3b;
+}
+
+/* システム設定にも追従 */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg-base:    #0f172a;
+    --bg-card:    #1e293b;
+    --bg-input:   #334155;
+    --bg-muted:   #1e293b;
+    --border:     #334155;
+    --text-main:  #f1f5f9;
+    --text-sub:   #94a3b8;
+    --text-muted: #64748b;
+    --nav-bg:     rgba(15,23,42,0.95);
+    --header-bg:  rgba(15,23,42,0.90);
+    --accent:     #10b981;
+    --accent-sub: #064e3b;
+  }
+}
+
+/* ベース適用 */
+body {
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    申告書 印刷スタイル
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 @media print {
@@ -11,7 +69,6 @@
     width: 100%; background: white; z-index: 9999;
   }
 }
-
 .print-container { font-family: "Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; font-size:10pt; color:#000; background:#fff; }
 .print-page { width:100%; padding:16mm 18mm; box-sizing:border-box; page-break-after:always; }
 .print-page-break { page-break-before:always; }
@@ -42,7 +99,7 @@
 .print-footer { margin-top:8px; text-align:center; font-size:7pt; color:#999; border-top:1px solid #eee; padding-top:4px; }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   書類（請求書・領収書等）印刷スタイル
+   書類印刷スタイル
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .doc-print-container { font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; font-size:10pt; color:#000; background:#fff; }
 .doc-print-page { width:100%; padding:14mm 18mm; box-sizing:border-box; }
@@ -78,6 +135,5 @@
 .doc-remarks-title { font-size:8pt; font-weight:bold; color:#475569; margin:0 0 4px 0; }
 .doc-remarks-text  { font-size:8pt; color:#1e293b; white-space:pre-wrap; margin:0; }
 .doc-footer { text-align:right; font-size:7pt; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:4px; }
-
 @media screen { .doc-print-container { display:none; } }
 @media print  { .doc-print-container { display:block !important; } }
