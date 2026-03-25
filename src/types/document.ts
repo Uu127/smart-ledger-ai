@@ -25,6 +25,7 @@ export interface BusinessDocument {
   issueDate: string;
   dueDate?: string;
   deliveryDate?: string;
+  subject?: string;           // 件名（例：ホームページ制作費 着手金）
 
   // 発行者
   issuerName: string;
@@ -33,7 +34,7 @@ export interface BusinessDocument {
   issuerEmail?: string;
   invoiceRegistrationNo?: string;
 
-  // 振込先（専用フィールド）
+  // 振込先
   bankName?: string;
   bankBranch?: string;
   bankAccountType?: string;
@@ -54,7 +55,7 @@ export interface BusinessDocument {
   tax8: number;
   total: number;
 
-  // 備考（振込先とは別）
+  // 備考
   notes?: string;
 
   status: "draft" | "sent" | "paid";
@@ -86,14 +87,12 @@ export function calcDocument(items: DocumentItem[]): DocumentCalculation {
   let subtotal    = 0;
   let tax10Amount = 0;
   let tax8Amount  = 0;
-
   for (const item of items) {
-    const lineTotal = item.quantity * item.unitPrice;
-    subtotal += lineTotal;
-    if (item.taxRate === 10) tax10Amount += Math.floor(lineTotal * 0.1);
-    if (item.taxRate === 8)  tax8Amount  += Math.floor(lineTotal * 0.08);
+    const line = item.quantity * item.unitPrice;
+    subtotal += line;
+    if (item.taxRate === 10) tax10Amount += Math.floor(line * 0.1);
+    if (item.taxRate === 8)  tax8Amount  += Math.floor(line * 0.08);
   }
-
   return { subtotal, tax10Amount, tax8Amount, total: subtotal + tax10Amount + tax8Amount };
 }
 
@@ -101,6 +100,5 @@ export function generateDocumentNumber(type: DocumentType, count: number): strin
   const prefix: Record<DocumentType, string> = {
     invoice: "INV", receipt: "REC", estimate: "EST", delivery: "DEL",
   };
-  const year = new Date().getFullYear();
-  return `${prefix[type]}-${year}-${String(count + 1).padStart(3, "0")}`;
+  return `${prefix[type]}-${new Date().getFullYear()}-${String(count + 1).padStart(3, "0")}`;
 }

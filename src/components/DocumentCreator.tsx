@@ -32,7 +32,6 @@ export function DocumentCreator() {
   const fromId    = searchParams.get("from");
   const sourceDoc = fromId ? documents.find(d => d.id === fromId) : null;
   const base      = editDoc ?? sourceDoc;
-
   const initialType = (searchParams.get("type") as DocumentType) ?? editDoc?.type ?? "invoice";
 
   const [initialized, setInitialized] = useState(false);
@@ -40,6 +39,7 @@ export function DocumentCreator() {
   const [issueDate, setIssueDate]     = useState(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate]         = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
+  const [subject, setSubject]         = useState(""); // 件名
   const [clientName, setClientName]   = useState("");
   const [clientAddress, setClientAddress] = useState("");
   const [clientDept, setClientDept]   = useState("");
@@ -61,6 +61,7 @@ export function DocumentCreator() {
       setIssueDate(base.issueDate ?? new Date().toISOString().slice(0, 10));
       setDueDate(base.dueDate ?? "");
       setDeliveryDate(base.deliveryDate ?? "");
+      setSubject(base.subject ?? "");
       setClientName(base.clientName ?? "");
       setClientAddress(base.clientAddress ?? "");
       setClientDept(base.clientDepartment ?? "");
@@ -104,6 +105,7 @@ export function DocumentCreator() {
       type, documentNumber: docNumber, issueDate,
       dueDate:      type === "invoice" ? dueDate : undefined,
       deliveryDate: (type === "delivery" || type === "receipt") ? deliveryDate : undefined,
+      subject:      subject || undefined,
       issuerName:    profile.name || editDoc?.issuerName || "",
       issuerAddress: profile.address  || editDoc?.issuerAddress,
       issuerPhone:   profile.phone    || editDoc?.issuerPhone,
@@ -114,7 +116,8 @@ export function DocumentCreator() {
       bankAccountHolder: bankAccountHolder || undefined,
       clientName, clientAddress, clientDepartment: clientDept,
       items, subtotal: calc.subtotal, tax10: calc.tax10Amount, tax8: calc.tax8Amount, total: calc.total,
-      notes, status: (isEdit ? editDoc?.status : "draft") ?? "draft",
+      notes,
+      status: (isEdit ? editDoc?.status : "draft") ?? "draft",
     };
     isEdit && editId ? await updateDocument(editId, data) : await addDocument(data);
     setTimeout(() => navigate("/documents"), 800);
@@ -130,10 +133,10 @@ export function DocumentCreator() {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="p-4 space-y-5 pb-32">
 
-      {/* タイトルバー（戻るボタン付き） */}
+      {/* ヘッダー（戻るボタン付き） */}
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => navigate("/documents")}
-          className="p-2 rounded-xl transition-all active:scale-90"
+          className="p-2 rounded-xl border transition-all active:scale-90"
           style={{ backgroundColor: "var(--bg-card)", color: "var(--text-sub)", borderColor: "var(--border)" }}>
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -164,8 +167,7 @@ export function DocumentCreator() {
           <h3 className="text-xs font-black uppercase tracking-widest" style={labelStyle}>書類の種類</h3>
           <div className="grid grid-cols-2 gap-2">
             {DOC_TYPES.map(t => (
-              <button key={t} type="button"
-                onClick={() => !isEdit && setType(t)}
+              <button key={t} type="button" onClick={() => !isEdit && setType(t)}
                 className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${
                   type === t ? "border-emerald-400 bg-emerald-50 text-emerald-700" : ""
                 } ${isEdit ? "cursor-default" : "active:scale-95"}`}
@@ -174,7 +176,6 @@ export function DocumentCreator() {
               </button>
             ))}
           </div>
-          {isEdit && <p className="text-[10px] font-bold" style={labelStyle}>書類の種類は編集できません</p>}
         </div>
 
         {/* 基本情報 */}
@@ -205,20 +206,28 @@ export function DocumentCreator() {
               </div>
             )}
           </div>
+
+          {/* 件名 */}
+          <div className="space-y-1">
+            <label className={labelClass} style={labelStyle}>件名（例：ホームページ制作費 着手金）</label>
+            <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder="例: ウェブサイト制作費 【着手金】"
+              className={inputClass} style={inputStyle} />
+          </div>
         </div>
 
         {/* 宛先 */}
         <div className="rounded-2xl p-5 border shadow-sm space-y-4" style={cardStyle}>
           <h3 className="text-xs font-black uppercase tracking-widest" style={labelStyle}>宛先</h3>
           {[
-            { label: "会社名 / 氏名 *", value: clientName, set: setClientName, placeholder: "例: 株式会社〇〇", required: true },
-            { label: "部署名",           value: clientDept, set: setClientDept, placeholder: "例: 経理部 御中" },
-            { label: "住所",             value: clientAddress, set: setClientAddress, placeholder: "例: 大阪府大阪市〇〇区..." },
-          ].map(({ label, value, set, placeholder, required }) => (
+            { label: "会社名 / 氏名 *", value: clientName,    set: setClientName,    placeholder: "例: 株式会社〇〇", req: true },
+            { label: "部署名 / 担当者",  value: clientDept,    set: setClientDept,    placeholder: "例: ご担当者様" },
+            { label: "住所",             value: clientAddress, set: setClientAddress, placeholder: "例: 東京都〇〇区..." },
+          ].map(({ label, value, set, placeholder, req }) => (
             <div key={label} className="space-y-1">
               <label className={labelClass} style={labelStyle}>{label}</label>
               <input type="text" value={value} onChange={e => set(e.target.value)}
-                placeholder={placeholder} required={required}
+                placeholder={placeholder} required={req}
                 className={inputClass} style={inputStyle} />
             </div>
           ))}
@@ -232,7 +241,9 @@ export function DocumentCreator() {
               <button type="button" onClick={() => setTaxIncMode(v => !v)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black active:scale-95 transition-all"
                 style={{ backgroundColor: "var(--bg-input)", color: "var(--text-sub)" }}>
-                {taxIncMode ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税込入力</> : <><ToggleLeft className="w-4 h-4" /> 税抜入力</>}
+                {taxIncMode
+                  ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税込入力</>
+                  : <><ToggleLeft className="w-4 h-4" /> 税抜入力</>}
               </button>
               <button type="button" onClick={addItem}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-black active:scale-95 transition-all">
@@ -253,12 +264,10 @@ export function DocumentCreator() {
                     </button>
                   )}
                 </div>
-
                 <input type="text" value={item.description}
                   onChange={e => updateItem(item.id, "description", e.target.value)}
-                  placeholder="例: Webサイト制作費"
+                  placeholder="例: ホームページ制作費 【着手金】"
                   className={inputClass} style={{ backgroundColor: "var(--bg-card)", color: "var(--text-main)" }} />
-
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <label className={labelClass} style={labelStyle}>数量</label>
@@ -285,7 +294,6 @@ export function DocumentCreator() {
                     </select>
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <label className={labelClass} style={labelStyle}>単価（{taxIncMode ? "税込" : "税抜"}）</label>
                   <div className="relative">
@@ -302,7 +310,6 @@ export function DocumentCreator() {
                     )}
                   </div>
                 </div>
-
                 <div className="flex justify-between items-center pt-1 border-t" style={{ borderColor: "var(--border)" }}>
                   <span className="text-[10px] font-bold" style={labelStyle}>小計（税抜）</span>
                   <span className="text-sm font-black" style={{ color: "var(--text-main)" }}>
@@ -314,21 +321,33 @@ export function DocumentCreator() {
           </div>
 
           {/* 合計 */}
-          <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl p-4 space-y-2">
+          <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
             {[
-              { label: "小計（税抜）", value: calc.subtotal, show: true, bold: false },
-              { label: "消費税（10%）", value: calc.tax10Amount, show: calc.tax10Amount > 0, bold: false },
+              { label: "小計（税抜）", value: calc.subtotal,    show: true,                   bold: false },
+              { label: "消費税（10%）", value: calc.tax10Amount, show: calc.tax10Amount > 0,   bold: false },
               { label: "消費税（8% 軽減）", value: calc.tax8Amount, show: calc.tax8Amount > 0, bold: false },
-              { label: "合計（税込）", value: calc.total, show: true, bold: true },
+              { label: "合計金額（税込）", value: calc.total,   show: true,                   bold: true  },
             ].filter(r => r.show).map(({ label, value, bold }) => (
               <div key={label} className={`flex justify-between ${bold ? "pt-2 border-t border-emerald-200 items-center" : ""}`}>
-                <span className={`${bold ? "text-sm font-black text-slate-800" : "text-xs font-bold text-slate-600"}`}>{label}</span>
-                <span className={`${bold ? "text-xl font-black text-emerald-700" : "text-xs font-bold text-slate-600"}`}>
+                <span className={bold ? "text-sm font-black text-slate-800" : "text-xs font-bold text-slate-600"}>{label}</span>
+                <span className={bold ? "text-xl font-black text-emerald-700" : "text-xs font-bold text-slate-600"}>
                   ¥{value.toLocaleString()}
                 </span>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* 備考 */}
+        <div className="rounded-2xl p-5 border shadow-sm space-y-3" style={cardStyle}>
+          <h3 className="text-xs font-black uppercase tracking-widest" style={labelStyle}>備考</h3>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder={"例:\n・お振込手数料はご負担をお願いいたします。\n・ご不明な点はお気軽にご連絡ください。"}
+            rows={5}
+            className={`${inputClass} resize-none leading-relaxed`} style={inputStyle} />
+          <p className="text-[10px] font-bold" style={labelStyle}>
+            インボイス未登録の注意書きなども備考欄にご記入ください
+          </p>
         </div>
 
         {/* 振込先 */}
@@ -374,25 +393,21 @@ export function DocumentCreator() {
             {bankName && (
               <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-input)" }}>
                 <p className="text-[10px] font-black mb-1" style={labelStyle}>印字プレビュー</p>
-                <p className="text-xs font-bold" style={{ color: "var(--text-main)" }}>{bankName} {bankBranch}　{bankAccountType}　{bankAccountNo}</p>
+                <p className="text-xs font-bold" style={{ color: "var(--text-main)" }}>
+                  {bankName} {bankBranch}　{bankAccountType}　{bankAccountNo}
+                </p>
                 <p className="text-xs font-bold" style={{ color: "var(--text-main)" }}>{bankAccountHolder}</p>
               </div>
             )}
           </div>
         )}
 
-        {/* 備考 */}
-        <div className="rounded-2xl p-5 border shadow-sm space-y-3" style={cardStyle}>
-          <h3 className="text-xs font-black uppercase tracking-widest" style={labelStyle}>備考</h3>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder="例: お支払いは発行日より30日以内にお願いいたします。"
-            rows={3} className={`${inputClass} resize-none`} style={inputStyle} />
-        </div>
-
         {/* 保存ボタン */}
         <button type="submit" disabled={!clientName}
           className={`w-full py-5 rounded-2xl font-black text-white transition-all flex items-center justify-center gap-2
-            ${!clientName ? "opacity-30 cursor-not-allowed" : submitted ? "bg-green-500" : "bg-slate-900 hover:bg-slate-800 active:scale-95"}`}>
+            ${!clientName ? "opacity-30 cursor-not-allowed"
+              : submitted ? "bg-green-500 shadow-lg shadow-green-200"
+              : "bg-slate-900 hover:bg-slate-800 active:scale-95"}`}>
           {submitted
             ? <><CheckCircle2 className="w-6 h-6" /> {isEdit ? "更新しました！" : "保存しました！"}</>
             : isEdit ? `${DOCUMENT_TYPE_LABELS[type]}を更新する` : `${DOCUMENT_TYPE_LABELS[type]}を保存する`
