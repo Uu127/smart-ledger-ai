@@ -46,6 +46,7 @@ export function DocumentCreator() {
   const [items, setItems]             = useState<DocumentItem[]>([newItem()]);
   const [notes, setNotes]             = useState("");
   const [taxIncMode, setTaxIncMode]   = useState(false);
+  const [showTaxLabels, setShowTaxLabels] = useState(true);
   const [submitted, setSubmitted]     = useState(false);
   const [bankName, setBankName]               = useState("");
   const [bankBranch, setBankBranch]           = useState("");
@@ -67,6 +68,7 @@ export function DocumentCreator() {
       setClientDept(base.clientDepartment ?? "");
       setItems(base.items?.length ? base.items : [newItem()]);
       setNotes(base.notes ?? "");
+      setShowTaxLabels(base.showTaxLabels ?? true);
       setBankName(base.bankName ?? "");
       setBankBranch(base.bankBranch ?? "");
       setBankAccountType(base.bankAccountType ?? "普通");
@@ -87,6 +89,12 @@ export function DocumentCreator() {
     : generateDocumentNumber(type, documents.filter(d => d.type === type).length);
 
   const calc = calcDocument(items);
+  const allZeroTax = items.every(i => i.taxRate === 0);
+
+  useEffect(() => {
+    if (!allZeroTax) setShowTaxLabels(true);
+  }, [allZeroTax]);
+
   const addItem    = () => setItems(p => [...p, newItem()]);
   const removeItem = (id: string) => setItems(p => p.filter(i => i.id !== id));
   const updateItem = (id: string, key: keyof DocumentItem, value: string | number) =>
@@ -117,6 +125,7 @@ export function DocumentCreator() {
       clientName, clientAddress, clientDepartment: clientDept,
       items, subtotal: calc.subtotal, tax10: calc.tax10Amount, tax8: calc.tax8Amount, total: calc.total,
       notes,
+      showTaxLabels: allZeroTax ? showTaxLabels : true,
       status: (isEdit ? editDoc?.status : "draft") ?? "draft",
     };
     isEdit && editId ? await updateDocument(editId, data) : await addDocument(data);
@@ -245,6 +254,15 @@ export function DocumentCreator() {
                   ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税込入力</>
                   : <><ToggleLeft className="w-4 h-4" /> 税抜入力</>}
               </button>
+              {allZeroTax && (
+                <button type="button" onClick={() => setShowTaxLabels(v => !v)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black active:scale-95 transition-all"
+                  style={{ backgroundColor: "var(--bg-input)", color: "var(--text-sub)" }}>
+                  {showTaxLabels
+                    ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税表示あり</>
+                    : <><ToggleLeft className="w-4 h-4" /> 税表示なし</>}
+                </button>
+              )}
               <button type="button" onClick={addItem}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-black active:scale-95 transition-all">
                 <Plus className="w-3.5 h-3.5" /> 追加
@@ -295,7 +313,7 @@ export function DocumentCreator() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className={labelClass} style={labelStyle}>単価（{taxIncMode ? "税込" : "税抜"}）</label>
+                  <label className={labelClass} style={labelStyle}>{showTaxLabels ? `単価（${taxIncMode ? "税込" : "税抜"}）` : "単価"}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black" style={labelStyle}>¥</span>
                     {taxIncMode ? (
@@ -311,7 +329,7 @@ export function DocumentCreator() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t" style={{ borderColor: "var(--border)" }}>
-                  <span className="text-[10px] font-bold" style={labelStyle}>小計（税抜）</span>
+                  <span className="text-[10px] font-bold" style={labelStyle}>{showTaxLabels ? "小計（税抜）" : "小計"}</span>
                   <span className="text-sm font-black" style={{ color: "var(--text-main)" }}>
                     ¥{(item.quantity * item.unitPrice).toLocaleString()}
                   </span>
@@ -323,10 +341,10 @@ export function DocumentCreator() {
           {/* 合計 */}
           <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
             {[
-              { label: "小計（税抜）", value: calc.subtotal,    show: true,                   bold: false },
-              { label: "消費税（10%）", value: calc.tax10Amount, show: calc.tax10Amount > 0,   bold: false },
-              { label: "消費税（8% 軽減）", value: calc.tax8Amount, show: calc.tax8Amount > 0, bold: false },
-              { label: "合計金額（税込）", value: calc.total,   show: true,                   bold: true  },
+              { label: showTaxLabels ? "小計（税抜）" : "小計",         value: calc.subtotal,    show: true,                   bold: false },
+              { label: "消費税（10%）",                                 value: calc.tax10Amount, show: calc.tax10Amount > 0,   bold: false },
+              { label: "消費税（8% 軽減）",                             value: calc.tax8Amount,  show: calc.tax8Amount > 0,    bold: false },
+              { label: showTaxLabels ? "合計金額（税込）" : "合計金額", value: calc.total,       show: true,                   bold: true  },
             ].filter(r => r.show).map(({ label, value, bold }) => (
               <div key={label} className={`flex justify-between ${bold ? "pt-2 border-t border-emerald-200 items-center" : ""}`}>
                 <span className={bold ? "text-sm font-black text-slate-800" : "text-xs font-bold text-slate-600"}>{label}</span>

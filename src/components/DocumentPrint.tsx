@@ -74,7 +74,9 @@ export function DocumentPrint() {
 }
 
 function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; today: string }) {
-  const hasBankInfo = !!(doc.bankName && doc.bankAccountNo);
+  const hasBankInfo   = !!(doc.bankName && doc.bankAccountNo);
+  const allZeroTax    = doc.items.every(i => i.taxRate === 0);
+  const showTaxLabels = !allZeroTax || (doc.showTaxLabels ?? true);
 
   // 共通スタイル定数
   const border = "1px solid #cbd5e1";
@@ -154,7 +156,7 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
         padding: "3mm 6mm", marginBottom: "5mm", background: "#f8fafc",
       }}>
         <span style={{ fontSize: "10pt", fontWeight: "bold" }}>
-          {doc.type === "invoice" ? "ご請求金額" : "合計金額"}（税込）
+          {doc.type === "invoice" ? "ご請求金額" : "合計金額"}{showTaxLabels ? "（税込）" : ""}
         </span>
         <span style={{ fontSize: "20pt", fontWeight: "bold" }}>{yen(doc.total)}</span>
       </div>
@@ -168,9 +170,9 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
               <th style={{ padding: "2.5mm 4mm", textAlign: "left",   width: "44%" }}>項　目</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "9%"  }}>数量</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "7%"  }}>単位</th>
-              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>単価（税抜）</th>
+              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{showTaxLabels ? "単価（税抜）" : "単価"}</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "8%"  }}>税率</th>
-              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>金額（税込）</th>
+              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{showTaxLabels ? "金額（税込）" : "金額"}</th>
             </tr>
           </thead>
           <tbody>
@@ -206,7 +208,7 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
         <table style={{ borderCollapse: "collapse", fontSize: "8.5pt", minWidth: "200px" }}>
           <tbody>
             <tr>
-              <td style={{ padding: "2mm 4mm", color: "#64748b", border }}>小　計（参考：税抜）</td>
+              <td style={{ padding: "2mm 4mm", color: "#64748b", border }}>小　計{showTaxLabels ? "（参考：税抜）" : ""}</td>
               <td style={{ padding: "2mm 4mm", textAlign: "right", border }}>{yen(doc.subtotal)}</td>
             </tr>
             {doc.tax10 > 0 && (
@@ -223,7 +225,7 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
             )}
             <tr style={{ backgroundColor: "#f0fdf4" }}>
               <td style={{ padding: "2.5mm 4mm", fontWeight: "bold", border, borderTop: "2px solid #1e293b" }}>
-                ご請求合計（税込）
+                ご請求合計{showTaxLabels ? "（税込）" : ""}
               </td>
               <td style={{ padding: "2.5mm 4mm", textAlign: "right", fontWeight: "bold", border, borderTop: "2px solid #1e293b" }}>
                 {yen(doc.total)}

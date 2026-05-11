@@ -58,6 +58,8 @@ export interface BusinessDocument {
   // 備考
   notes?: string;
 
+  showTaxLabels?: boolean;
+
   status: "draft" | "sent" | "paid";
   createdAt: string;
   updatedAt: string;
