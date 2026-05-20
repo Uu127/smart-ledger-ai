@@ -159,7 +159,7 @@ export const sendScheduledNotifications = onSchedule(
             title: "📅 確定申告の締切が近づいています",
             body:  `3月15日まであと${15 - day}日です。申告書データを確認しましょう。`,
           },
-          webpush: { fcmOptions: { link: "https://smart-ledger-ai-gbov.vercel.app/tax" } },
+          webpush: { fcmOptions: { link: "https://smart-ledger-ai-759b7.web.app/tax" } },
         }).catch(console.error);
       }
 
@@ -185,7 +185,7 @@ export const sendScheduledNotifications = onSchedule(
               title: `📄 未送付の請求書が${oldDrafts.length}件あります`,
               body:  "作成から3日以上経過した下書き請求書があります。",
             },
-            webpush: { fcmOptions: { link: "https://smart-ledger-ai-gbov.vercel.app/documents" } },
+            webpush: { fcmOptions: { link: "https://smart-ledger-ai-759b7.web.app/documents" } },
           }).catch(console.error);
         }
       }
@@ -212,7 +212,7 @@ export const sendScheduledNotifications = onSchedule(
               title: "💰 請求書の支払期限が近づいています",
               body:  `${d.clientName} への請求書の支払期限は${d.dueDate}です。`,
             },
-            webpush: { fcmOptions: { link: "https://smart-ledger-ai-gbov.vercel.app/documents" } },
+            webpush: { fcmOptions: { link: "https://smart-ledger-ai-759b7.web.app/documents" } },
           }).catch(console.error);
         }
       }
