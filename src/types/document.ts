@@ -29,6 +29,7 @@ export interface BusinessDocument {
 
   // 発行者
   issuerName: string;
+  issuerContactPerson?: string;
   issuerAddress?: string;
   issuerPhone?: string;
   issuerEmail?: string;
@@ -58,7 +59,7 @@ export interface BusinessDocument {
   // 備考
   notes?: string;
 
-  showTaxLabels?: boolean;
+  hideTaxDisplay?: boolean;
 
   status: "draft" | "sent" | "paid";
   createdAt: string;
@@ -74,6 +75,7 @@ export interface DocumentCalculation {
 
 export interface IssuerProfile {
   name: string;
+  contactPerson?: string;
   address?: string;
   phone?: string;
   email?: string;

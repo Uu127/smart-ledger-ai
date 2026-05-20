@@ -13,6 +13,7 @@ import { TaxReport } from "@/components/TaxReport";
 import { ETaxHelper } from "@/components/ETaxHelper";
 import { ProRateSettings } from "@/components/ProRateSettings";
 import { DepreciationManager } from "@/components/DepreciationManager";
+import { GeneralLedger } from "@/components/GeneralLedger";
 import { DocumentList } from "@/components/DocumentList";
 import { DocumentCreator } from "@/components/DocumentCreator";
 import { DocumentPrint } from "@/components/DocumentPrint";
@@ -53,7 +54,8 @@ function AuthenticatedApp() {
           <Route path="/etax"                element={<ETaxHelper />} />
           <Route path="/settings/prorate"    element={<ProRateSettings />} />
           <Route path="/settings/notifications" element={<NotificationSettings />} />
-          <Route path="/depreciation"        element={<DepreciationManager />} />
+          <Route path="/depreciation"          element={<DepreciationManager />} />
+          <Route path="/general-ledger"       element={<GeneralLedger />} />
           <Route path="/documents"           element={<DocumentList />} />
           <Route path="/documents/new"       element={<DocumentCreator />} />
           <Route path="/documents/:id/edit"  element={<DocumentCreator />} />

@@ -1,7 +1,7 @@
 // src/components/Dashboard.tsx
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet, Calendar, FileText, BarChart2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Calendar, FileText, BarChart2, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   BarChart, Bar, LineChart, Line,
@@ -9,6 +9,7 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { useLedger } from "@/hooks/useLedger";
+import { useDepreciation, calcDepreciation, calcTotalDepreciation } from "@/hooks/useDepreciation";
 
 // ── ユーティリティ ─────────────────────────────────────────
 function daysUntilFiling() {
@@ -59,6 +60,7 @@ function SummaryCard({ label, amount, icon: Icon, color, sub }: {
 // ── メイン ────────────────────────────────────────────────
 export function Dashboard() {
   const { entries, syncing } = useLedger();
+  const { assets }           = useDepreciation();
   const currentYear = new Date().getFullYear();
   const [viewYear, setViewYear] = useState(currentYear);
   const [chartTab, setChartTab] = useState<"bar" | "line" | "yoy">("bar");
@@ -326,6 +328,58 @@ export function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 固定資産カード */}
+      {assets.length > 0 && (
+        <div className="rounded-2xl p-5 border shadow-sm" style={cardStyle}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-orange-500" />
+              <h3 className="text-sm font-black" style={{ color: "var(--text-main)" }}>固定資産</h3>
+            </div>
+            <Link to="/depreciation"
+              className="text-[10px] font-black"
+              style={{ color: "var(--text-muted)" }}>
+              管理・詳細 →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {assets.map(asset => {
+              const dep = calcDepreciation(asset, viewYear);
+              return (
+                <div key={asset.id} className="flex justify-between items-center">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black truncate" style={{ color: "var(--text-main)" }}>
+                      {asset.name}
+                    </p>
+                    <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>
+                      ¥{asset.acquisitionCost.toLocaleString()} | 耐用{asset.usefulLife}年
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0 ml-3">
+                    {dep > 0 ? (
+                      <p className="text-sm font-black text-orange-500">−¥{dep.toLocaleString()}</p>
+                    ) : (
+                      <p className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>償却完了</p>
+                    )}
+                    <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>{viewYear}年償却</p>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>
+              <div className="flex justify-between items-center">
+                <p className="text-xs font-black" style={{ color: "var(--text-sub)" }}>
+                  {viewYear}年 償却合計
+                </p>
+                <p className="text-sm font-black text-orange-500">
+                  −¥{calcTotalDepreciation(assets, viewYear).toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

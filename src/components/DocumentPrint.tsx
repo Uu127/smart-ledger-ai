@@ -36,7 +36,6 @@ export function DocumentPrint() {
     </div>
   );
 
-  const today    = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
   const docTitle = getDocTitle(doc.type);
 
   return (
@@ -61,22 +60,20 @@ export function DocumentPrint() {
       {/* 画面プレビュー */}
       <div className="print:hidden p-6 min-h-screen" style={{ backgroundColor: "#e2e8f0" }}>
         <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
-          <PrintLayout doc={doc} docTitle={docTitle} today={today} />
+          <PrintLayout doc={doc} docTitle={docTitle} />
         </div>
       </div>
 
       {/* 印刷用 */}
       <div className="hidden print:block">
-        <PrintLayout doc={doc} docTitle={docTitle} today={today} />
+        <PrintLayout doc={doc} docTitle={docTitle} />
       </div>
     </>
   );
 }
 
-function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; today: string }) {
-  const hasBankInfo   = !!(doc.bankName && doc.bankAccountNo);
-  const allZeroTax    = doc.items.every(i => i.taxRate === 0);
-  const showTaxLabels = !allZeroTax || (doc.showTaxLabels ?? true);
+function PrintLayout({ doc, docTitle }: { doc: Doc; docTitle: string }) {
+  const hasBankInfo = !!(doc.bankName && doc.bankAccountNo);
 
   // 共通スタイル定数
   const border = "1px solid #cbd5e1";
@@ -129,7 +126,10 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
 
         {/* 発行者情報 */}
         <div style={{ textAlign: "right", fontSize: "8.5pt", color: "#1e293b", minWidth: "140px" }}>
-          <p style={{ fontSize: "11pt", fontWeight: "bold", margin: "0 0 1.5mm 0" }}>{doc.issuerName}</p>
+          <p style={{ fontSize: "11pt", fontWeight: "bold", margin: "0 0 0.5mm 0" }}>{doc.issuerName}</p>
+          {doc.issuerContactPerson && (
+            <p style={{ fontSize: "8.5pt", margin: "0 0 1.5mm 0", color: "#475569" }}>担当：{doc.issuerContactPerson}</p>
+          )}
           {doc.issuerAddress && <p style={{ margin: "0.5mm 0", color: "#64748b" }}>{doc.issuerAddress}</p>}
           {doc.issuerPhone   && <p style={{ margin: "0.5mm 0", color: "#64748b" }}>TEL: {doc.issuerPhone}</p>}
           {doc.issuerEmail   && <p style={{ margin: "0.5mm 0", color: "#64748b" }}>{doc.issuerEmail}</p>}
@@ -156,7 +156,11 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
         padding: "3mm 6mm", marginBottom: "5mm", background: "#f8fafc",
       }}>
         <span style={{ fontSize: "10pt", fontWeight: "bold" }}>
+<<<<<<< HEAD
           {doc.type === "invoice" ? "ご請求金額" : "合計金額"}{showTaxLabels ? "（税込）" : ""}
+=======
+          {doc.type === "invoice" ? "ご請求金額" : "合計金額"}{!doc.hideTaxDisplay && "（税込）"}
+>>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
         </span>
         <span style={{ fontSize: "20pt", fontWeight: "bold" }}>{yen(doc.total)}</span>
       </div>
@@ -170,9 +174,15 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
               <th style={{ padding: "2.5mm 4mm", textAlign: "left",   width: "44%" }}>項　目</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "9%"  }}>数量</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "7%"  }}>単位</th>
+<<<<<<< HEAD
               <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{showTaxLabels ? "単価（税抜）" : "単価"}</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "8%"  }}>税率</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{showTaxLabels ? "金額（税込）" : "金額"}</th>
+=======
+              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{doc.hideTaxDisplay ? "単価" : "単価（税抜）"}</th>
+              <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "8%"  }}>税率</th>
+              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{doc.hideTaxDisplay ? "金額" : "金額（税込）"}</th>
+>>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
             </tr>
           </thead>
           <tbody>
@@ -187,7 +197,7 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
                   <td style={{ padding: "2.5mm 4mm", border, textAlign: "center" }}>{item.unit}</td>
                   <td style={{ padding: "2.5mm 4mm", border, textAlign: "right"  }}>{yen(item.unitPrice)}</td>
                   <td style={{ padding: "2.5mm 4mm", border, textAlign: "center" }}>
-                    {item.taxRate}%{item.taxRate === 8 ? " ※" : ""}
+                    {item.taxRate !== 0 ? `${item.taxRate}%${item.taxRate === 8 ? " ※" : ""}` : ""}
                   </td>
                   <td style={{ padding: "2.5mm 4mm", border, textAlign: "right"  }}>{yen(total)}</td>
                 </tr>
@@ -208,7 +218,11 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
         <table style={{ borderCollapse: "collapse", fontSize: "8.5pt", minWidth: "200px" }}>
           <tbody>
             <tr>
+<<<<<<< HEAD
               <td style={{ padding: "2mm 4mm", color: "#64748b", border }}>小　計{showTaxLabels ? "（参考：税抜）" : ""}</td>
+=======
+              <td style={{ padding: "2mm 4mm", color: "#64748b", border }}>{doc.hideTaxDisplay ? "小　計" : "小　計（参考：税抜）"}</td>
+>>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
               <td style={{ padding: "2mm 4mm", textAlign: "right", border }}>{yen(doc.subtotal)}</td>
             </tr>
             {doc.tax10 > 0 && (
@@ -225,7 +239,11 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
             )}
             <tr style={{ backgroundColor: "#f0fdf4" }}>
               <td style={{ padding: "2.5mm 4mm", fontWeight: "bold", border, borderTop: "2px solid #1e293b" }}>
+<<<<<<< HEAD
                 ご請求合計{showTaxLabels ? "（税込）" : ""}
+=======
+                {doc.hideTaxDisplay ? "ご請求合計" : "ご請求合計（税込）"}
+>>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
               </td>
               <td style={{ padding: "2.5mm 4mm", textAlign: "right", fontWeight: "bold", border, borderTop: "2px solid #1e293b" }}>
                 {yen(doc.total)}
@@ -278,11 +296,6 @@ function PrintLayout({ doc, docTitle, today }: { doc: Doc; docTitle: string; tod
         </div>
       )}
 
-      {/* フッター */}
-      <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "2.5mm", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ fontSize: "7pt", color: "#94a3b8", margin: 0 }}>SmartLedger AI</p>
-        <p style={{ fontSize: "7pt", color: "#94a3b8", margin: 0 }}>出力日: {today}</p>
-      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 // src/components/DocumentCreator.tsx
 import { useState, useEffect } from "react";
+import { DateInput } from "@/components/DateInput";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Trash2, CheckCircle2, FileText, ToggleLeft, ToggleRight, ArrowLeft } from "lucide-react";
@@ -11,6 +12,11 @@ import {
 
 const DOC_TYPES: DocumentType[] = ["invoice", "receipt", "estimate", "delivery"];
 const UNITS = ["式", "個", "本", "枚", "冊", "時間", "日", "月", "件", "回"];
+
+const NOTE_PRESETS = [
+  { label: "インボイス未登録", text: "・当方はインボイス制度の適格請求書発行事業者には登録しておりません。" },
+  { label: "振込手数料", text: "・お振込み手数料はご負担をお願い致します。" },
+];
 
 function newItem(): DocumentItem {
   return { id: crypto.randomUUID(), description: "", quantity: 1, unit: "式", unitPrice: 0, taxRate: 10 };
@@ -45,9 +51,10 @@ export function DocumentCreator() {
   const [clientDept, setClientDept]   = useState("");
   const [items, setItems]             = useState<DocumentItem[]>([newItem()]);
   const [notes, setNotes]             = useState("");
-  const [taxIncMode, setTaxIncMode]   = useState(false);
-  const [showTaxLabels, setShowTaxLabels] = useState(true);
+  const [taxIncMode, setTaxIncMode]     = useState(false);
+  const [hideTaxDisplay, setHideTaxDisplay] = useState(false);
   const [submitted, setSubmitted]     = useState(false);
+  const [saveError, setSaveError]     = useState(false);
   const [bankName, setBankName]               = useState("");
   const [bankBranch, setBankBranch]           = useState("");
   const [bankAccountType, setBankAccountType] = useState("普通");
@@ -68,7 +75,7 @@ export function DocumentCreator() {
       setClientDept(base.clientDepartment ?? "");
       setItems(base.items?.length ? base.items : [newItem()]);
       setNotes(base.notes ?? "");
-      setShowTaxLabels(base.showTaxLabels ?? true);
+      setHideTaxDisplay(base.hideTaxDisplay ?? false);
       setBankName(base.bankName ?? "");
       setBankBranch(base.bankBranch ?? "");
       setBankAccountType(base.bankAccountType ?? "普通");
@@ -92,13 +99,24 @@ export function DocumentCreator() {
   const allZeroTax = items.every(i => i.taxRate === 0);
 
   useEffect(() => {
-    if (!allZeroTax) setShowTaxLabels(true);
-  }, [allZeroTax]);
+    if (!allZeroTax) setHideTaxDisplay(false);
+    // 0%税率では税込・税抜が同一なので、税込入力モードを解除して値の変化を防ぐ
+    if (allZeroTax && taxIncMode) setTaxIncMode(false);
+  }, [allZeroTax, taxIncMode]);
 
   const addItem    = () => setItems(p => [...p, newItem()]);
   const removeItem = (id: string) => setItems(p => p.filter(i => i.id !== id));
   const updateItem = (id: string, key: keyof DocumentItem, value: string | number) =>
     setItems(p => p.map(i => i.id === id ? { ...i, [key]: value } : i));
+  const togglePreset = (text: string) => {
+    setNotes(prev => {
+      if (prev.includes(text)) {
+        return prev.split("\n").filter(line => line.trim() !== text.trim()).join("\n").trimStart();
+      }
+      return prev ? `${prev}\n${text}` : text;
+    });
+  };
+
   const fillBank = () => {
     setBankName(profile.bankName ?? ""); setBankBranch(profile.bankBranch ?? "");
     setBankAccountType(profile.bankAccountType ?? "普通"); setBankAccountNo(profile.bankAccountNo ?? "");
@@ -108,13 +126,14 @@ export function DocumentCreator() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName) return;
-    setSubmitted(true);
+    setSaveError(false);
     const data = {
       type, documentNumber: docNumber, issueDate,
       dueDate:      type === "invoice" ? dueDate : undefined,
       deliveryDate: (type === "delivery" || type === "receipt") ? deliveryDate : undefined,
       subject:      subject || undefined,
-      issuerName:    profile.name || editDoc?.issuerName || "",
+      issuerName:          profile.name || editDoc?.issuerName || "",
+      issuerContactPerson: profile.contactPerson || editDoc?.issuerContactPerson,
       issuerAddress: profile.address  || editDoc?.issuerAddress,
       issuerPhone:   profile.phone    || editDoc?.issuerPhone,
       issuerEmail:   profile.email    || editDoc?.issuerEmail,
@@ -125,11 +144,20 @@ export function DocumentCreator() {
       clientName, clientAddress, clientDepartment: clientDept,
       items, subtotal: calc.subtotal, tax10: calc.tax10Amount, tax8: calc.tax8Amount, total: calc.total,
       notes,
-      showTaxLabels: allZeroTax ? showTaxLabels : true,
+      hideTaxDisplay: allZeroTax ? hideTaxDisplay : false,
       status: (isEdit ? editDoc?.status : "draft") ?? "draft",
     };
-    isEdit && editId ? await updateDocument(editId, data) : await addDocument(data);
-    setTimeout(() => navigate("/documents"), 800);
+    try {
+      if (isEdit && editId) {
+        await updateDocument(editId, data);
+      } else {
+        await addDocument(data);
+      }
+      setSubmitted(true);
+      setTimeout(() => navigate("/documents"), 800);
+    } catch {
+      setSaveError(true);
+    }
   };
 
   const cardStyle  = { backgroundColor: "var(--bg-card)", borderColor: "var(--border)" };
@@ -197,21 +225,21 @@ export function DocumentCreator() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className={labelClass} style={labelStyle}>発行日</label>
-              <input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)}
-                required className={inputClass} style={inputStyle} />
+              <DateInput value={issueDate} onChange={setIssueDate} required
+                className="w-full focus-within:ring-2 focus-within:ring-emerald-400" />
             </div>
             {type === "invoice" && (
               <div className="space-y-1">
                 <label className={labelClass} style={labelStyle}>支払期限</label>
-                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                  className={inputClass} style={inputStyle} />
+                <DateInput value={dueDate} onChange={setDueDate}
+                  className="w-full focus-within:ring-2 focus-within:ring-emerald-400" />
               </div>
             )}
             {(type === "delivery" || type === "receipt") && (
               <div className="space-y-1">
                 <label className={labelClass} style={labelStyle}>{type === "receipt" ? "受領日" : "納品日"}</label>
-                <input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)}
-                  className={inputClass} style={inputStyle} />
+                <DateInput value={deliveryDate} onChange={setDeliveryDate}
+                  className="w-full focus-within:ring-2 focus-within:ring-emerald-400" />
               </div>
             )}
           </div>
@@ -247,20 +275,13 @@ export function DocumentCreator() {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-widest" style={labelStyle}>品目・内容</h3>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setTaxIncMode(v => !v)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black active:scale-95 transition-all"
-                style={{ backgroundColor: "var(--bg-input)", color: "var(--text-sub)" }}>
-                {taxIncMode
-                  ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税込入力</>
-                  : <><ToggleLeft className="w-4 h-4" /> 税抜入力</>}
-              </button>
-              {allZeroTax && (
-                <button type="button" onClick={() => setShowTaxLabels(v => !v)}
+              {!allZeroTax && (
+                <button type="button" onClick={() => setTaxIncMode(v => !v)}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-black active:scale-95 transition-all"
                   style={{ backgroundColor: "var(--bg-input)", color: "var(--text-sub)" }}>
-                  {showTaxLabels
-                    ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税表示あり</>
-                    : <><ToggleLeft className="w-4 h-4" /> 税表示なし</>}
+                  {taxIncMode
+                    ? <><ToggleRight className="w-4 h-4 text-emerald-500" /> 税込入力</>
+                    : <><ToggleLeft className="w-4 h-4" /> 税抜入力</>}
                 </button>
               )}
               <button type="button" onClick={addItem}
@@ -313,7 +334,9 @@ export function DocumentCreator() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className={labelClass} style={labelStyle}>{showTaxLabels ? `単価（${taxIncMode ? "税込" : "税抜"}）` : "単価"}</label>
+                  <label className={labelClass} style={labelStyle}>
+                    {allZeroTax && hideTaxDisplay ? "単価" : `単価（${taxIncMode ? "税込" : "税抜"}）`}
+                  </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black" style={labelStyle}>¥</span>
                     {taxIncMode ? (
@@ -329,7 +352,7 @@ export function DocumentCreator() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t" style={{ borderColor: "var(--border)" }}>
-                  <span className="text-[10px] font-bold" style={labelStyle}>{showTaxLabels ? "小計（税抜）" : "小計"}</span>
+                  <span className="text-[10px] font-bold" style={labelStyle}>{allZeroTax && hideTaxDisplay ? "小計" : "小計（税抜）"}</span>
                   <span className="text-sm font-black" style={{ color: "var(--text-main)" }}>
                     ¥{(item.quantity * item.unitPrice).toLocaleString()}
                   </span>
@@ -338,13 +361,30 @@ export function DocumentCreator() {
             ))}
           </div>
 
+          {/* 税込・税抜の非表示設定（全品目0%のときのみ） */}
+          {allZeroTax && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ backgroundColor: "var(--bg-input)" }}>
+              <span className="text-xs font-black" style={{ color: "var(--text-sub)" }}>
+                税込・税抜の表示を非表示にする
+              </span>
+              <button type="button" onClick={() => setHideTaxDisplay(v => !v)}
+                className="flex items-center gap-1.5 text-[10px] font-black active:scale-95 transition-all"
+                style={{ color: "var(--text-sub)" }}>
+                {hideTaxDisplay
+                  ? <><ToggleRight className="w-5 h-5 text-emerald-500" /> 非表示中</>
+                  : <><ToggleLeft className="w-5 h-5" /> 表示する</>}
+              </button>
+            </div>
+          )}
+
           {/* 合計 */}
           <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
             {[
-              { label: showTaxLabels ? "小計（税抜）" : "小計",         value: calc.subtotal,    show: true,                   bold: false },
-              { label: "消費税（10%）",                                 value: calc.tax10Amount, show: calc.tax10Amount > 0,   bold: false },
-              { label: "消費税（8% 軽減）",                             value: calc.tax8Amount,  show: calc.tax8Amount > 0,    bold: false },
-              { label: showTaxLabels ? "合計金額（税込）" : "合計金額", value: calc.total,       show: true,                   bold: true  },
+              { label: hideTaxDisplay ? "小計" : "小計（税抜）",       value: calc.subtotal,    show: true,                   bold: false },
+              { label: "消費税（10%）",                                  value: calc.tax10Amount, show: calc.tax10Amount > 0,   bold: false },
+              { label: "消費税（8% 軽減）",                              value: calc.tax8Amount,  show: calc.tax8Amount > 0,    bold: false },
+              { label: hideTaxDisplay ? "合計金額" : "合計金額（税込）", value: calc.total,       show: true,                   bold: true  },
             ].filter(r => r.show).map(({ label, value, bold }) => (
               <div key={label} className={`flex justify-between ${bold ? "pt-2 border-t border-emerald-200 items-center" : ""}`}>
                 <span className={bold ? "text-sm font-black text-slate-800" : "text-xs font-bold text-slate-600"}>{label}</span>
@@ -359,13 +399,24 @@ export function DocumentCreator() {
         {/* 備考 */}
         <div className="rounded-2xl p-5 border shadow-sm space-y-3" style={cardStyle}>
           <h3 className="text-xs font-black uppercase tracking-widest" style={labelStyle}>備考</h3>
+          <div className="flex flex-wrap gap-2">
+            {NOTE_PRESETS.map(({ label, text }) => {
+              const active = notes.includes(text);
+              return (
+                <button key={label} type="button" onClick={() => togglePreset(text)}
+                  className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg border transition-all active:scale-95 ${
+                    active ? "border-emerald-400 bg-emerald-50 text-emerald-700" : ""
+                  }`}
+                  style={active ? {} : { backgroundColor: "var(--bg-input)", borderColor: "var(--border)", color: "var(--text-sub)" }}>
+                  {active ? "✓ " : "+ "}{label}
+                </button>
+              );
+            })}
+          </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder={"例:\n・お振込手数料はご負担をお願いいたします。\n・ご不明な点はお気軽にご連絡ください。"}
+            placeholder={"例:\n・ご不明な点はお気軽にご連絡ください。"}
             rows={5}
             className={`${inputClass} resize-none leading-relaxed`} style={inputStyle} />
-          <p className="text-[10px] font-bold" style={labelStyle}>
-            インボイス未登録の注意書きなども備考欄にご記入ください
-          </p>
         </div>
 
         {/* 振込先 */}
@@ -421,7 +472,12 @@ export function DocumentCreator() {
         )}
 
         {/* 保存ボタン */}
-        <button type="submit" disabled={!clientName}
+        {saveError && (
+          <div className="rounded-xl px-4 py-3 text-sm font-bold text-red-700 bg-red-50 border border-red-200">
+            保存に失敗しました。再度お試しください。
+          </div>
+        )}
+        <button type="submit" disabled={!clientName || submitted}
           className={`w-full py-5 rounded-2xl font-black text-white transition-all flex items-center justify-center gap-2
             ${!clientName ? "opacity-30 cursor-not-allowed"
               : submitted ? "bg-green-500 shadow-lg shadow-green-200"

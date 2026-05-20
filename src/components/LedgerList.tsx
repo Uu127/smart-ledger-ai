@@ -1,10 +1,16 @@
 // src/components/LedgerList.tsx
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, ChevronDown, ChevronRight, Pencil, X, CheckCircle2 } from "lucide-react";
+import { Download, ChevronDown, ChevronRight, Pencil, X, CheckCircle2, TableProperties, Package, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useLedger } from "@/hooks/useLedger";
+import { useDepreciation, calcDepreciation, type FixedAsset } from "@/hooks/useDepreciation";
+import { FixedAssetForm } from "@/components/FixedAssetForm";
 import { DEBIT_ACCOUNTS_BY_GROUP, CREDIT_ACCOUNTS } from "@/constants/accounts";
 import type { LedgerEntry, DebitAccountLabel, CreditAccountLabel } from "@/types/ledger";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { SheetsDrawer } from "@/components/SheetsDrawer";
+import { DateInput } from "@/components/DateInput";
 
 // ── CSV出力 ───────────────────────────────────────────────
 function escapeCsv(s: string) { return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
@@ -37,6 +43,7 @@ function EditDrawer({ entry, onClose }: { entry: LedgerEntry; onClose: () => voi
   const [description, setDescription] = useState(entry.description);
   const [counterparty, setCounterparty] = useState(entry.counterparty);
   const [saved, setSaved]           = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +59,8 @@ function EditDrawer({ entry, onClose }: { entry: LedgerEntry; onClose: () => voi
     setTimeout(onClose, 800);
   };
 
-  const handleDelete = async () => {
-    if (!confirm("この仕訳を削除しますか？")) return;
+  const handleDelete = () => setShowConfirm(true);
+  const handleDeleteConfirm = async () => {
     await deleteLedgerEntry(entry.id);
     onClose();
   };
@@ -100,8 +107,8 @@ function EditDrawer({ entry, onClose }: { entry: LedgerEntry; onClose: () => voi
             {/* 日付 */}
             <div className="space-y-1">
               <label className={labelClass}>日付</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                required className={inputClass} />
+              <DateInput value={date} onChange={setDate} required
+                className="w-full focus-within:ring-2 focus-within:ring-emerald-400" />
             </div>
 
             {/* 借方科目 */}
@@ -156,15 +163,28 @@ function EditDrawer({ entry, onClose }: { entry: LedgerEntry; onClose: () => voi
           </form>
         </div>
       </motion.div>
+
+      <ConfirmDialog
+        isOpen={showConfirm}
+        title="仕訳を削除しますか？"
+        message="この操作は元に戻せません"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowConfirm(false)}
+      />
     </AnimatePresence>
   );
 }
 
 // ── メインコンポーネント ───────────────────────────────────
+const METHOD_SHORT: Record<string, string> = { straight: "定額法", declining: "定率法", lump: "一括償却" };
+
 export function LedgerList() {
   const { entries, syncing } = useLedger();
-  const [openMonths, setOpenMonths]   = useState<Set<string>>(new Set());
-  const [editEntry, setEditEntry]     = useState<LedgerEntry | null>(null);
+  const { assets }           = useDepreciation();
+  const [openMonths, setOpenMonths]     = useState<Set<string>>(new Set());
+  const [editEntry, setEditEntry]       = useState<LedgerEntry | null>(null);
+  const [editAsset, setEditAsset]       = useState<FixedAsset | null>(null);
+  const [showSheets, setShowSheets]     = useState(false);
 
   const currentYear = new Date().getFullYear();
 
@@ -203,8 +223,46 @@ export function LedgerList() {
   return (
     <div className="p-4 space-y-4 pb-24">
 
-      {/* 編集ドロワー */}
+      {/* 仕訳編集ドロワー */}
       {editEntry && <EditDrawer entry={editEntry} onClose={() => setEditEntry(null)} />}
+
+      {/* 固定資産編集ドロワー */}
+      <AnimatePresence>
+        {editAsset && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setEditAsset(null)}
+              className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm" />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 220 }}
+              className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.12)]"
+              style={{ maxHeight: "92dvh", backgroundColor: "var(--bg-card)" }}>
+              <div className="flex justify-center pt-3 shrink-0">
+                <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "var(--border)" }} />
+              </div>
+              <div className="flex items-center justify-between px-6 py-4 border-b shrink-0"
+                style={{ borderColor: "var(--border)" }}>
+                <h3 className="font-black" style={{ color: "var(--text-main)" }}>固定資産を編集</h3>
+                <button onClick={() => setEditAsset(null)}
+                  className="p-2 rounded-full active:scale-90 transition-all"
+                  style={{ backgroundColor: "var(--bg-input)", color: "var(--text-sub)" }}>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+                <div className="px-6 pt-5 pb-12">
+                  <FixedAssetForm
+                    asset={editAsset}
+                    onSaved={() => setEditAsset(null)}
+                    onCancel={() => setEditAsset(null)}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* 年間サマリー */}
       <div className="bg-emerald-500 rounded-2xl p-5 text-white">
@@ -231,11 +289,23 @@ export function LedgerList() {
 
       {/* エクスポートボタン */}
       {entries.length > 0 && (
-        <button onClick={() => downloadCsv(entries)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-slate-100 text-slate-600 text-sm font-bold hover:bg-slate-50 active:scale-95 transition-all shadow-sm">
-          <Download className="w-4 h-4" /> CSVエクスポート
-        </button>
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={() => downloadCsv(entries)}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-slate-100 text-slate-600 text-sm font-bold hover:bg-slate-50 active:scale-95 transition-all shadow-sm">
+            <Download className="w-4 h-4" /> CSV
+          </button>
+          <button onClick={() => setShowSheets(true)}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 active:scale-95 transition-all shadow-sm shadow-emerald-200">
+            <TableProperties className="w-4 h-4" /> Sheets
+          </button>
+          <Link to="/general-ledger"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-600 active:scale-95 transition-all shadow-sm shadow-indigo-200">
+            <BookOpen className="w-4 h-4" /> 元帳
+          </Link>
+        </div>
       )}
+
+      <SheetsDrawer isOpen={showSheets} onClose={() => setShowSheets(false)} entries={entries} />
 
       {syncing && (
         <div className="py-8 flex justify-center">
@@ -246,6 +316,69 @@ export function LedgerList() {
       {!syncing && entries.length === 0 && (
         <div className="py-16 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-100">
           <p className="text-sm font-bold text-slate-300">まだ記録がありません</p>
+        </div>
+      )}
+
+      {/* 固定資産一覧 */}
+      {assets.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-orange-500" />
+              <h3 className="text-sm font-black" style={{ color: "var(--text-main)" }}>
+                固定資産 — {assets.length}件
+              </h3>
+            </div>
+            <Link to="/depreciation"
+              className="text-[10px] font-black"
+              style={{ color: "var(--text-muted)" }}>
+              管理・詳細 →
+            </Link>
+          </div>
+          <div className="rounded-2xl border shadow-sm overflow-hidden"
+            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+            {assets.map((asset, i) => {
+              const dep = calcDepreciation(asset, currentYear);
+              return (
+                <div key={asset.id}
+                  className={`flex items-center justify-between px-4 py-3${i > 0 ? " border-t" : ""}`}
+                  style={{ borderColor: "var(--border)" }}>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                      <Package className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black truncate" style={{ color: "var(--text-main)" }}>
+                        {asset.name}
+                      </p>
+                      <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>
+                        {asset.acquisitionDate} | 耐用{asset.usefulLife}年 | {METHOD_SHORT[asset.method] ?? asset.method}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <div className="text-right">
+                      <p className="text-sm font-black text-orange-500">
+                        ¥{asset.acquisitionCost.toLocaleString()}
+                      </p>
+                      {dep > 0 ? (
+                        <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>
+                          今年 −¥{dep.toLocaleString()}
+                        </p>
+                      ) : (
+                        <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>償却完了</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setEditAsset(asset)}
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-orange-500 hover:bg-orange-50 active:scale-90 transition-all">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

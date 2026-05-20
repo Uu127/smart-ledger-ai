@@ -41,7 +41,11 @@ export function useDocuments() {
   const updateDocument = useCallback(async (id: string, data: Partial<BusinessDocument>) => {
     if (!user) return;
     const ref = doc(db, "users", user.uid, "documents", id);
-    await updateDoc(ref, { ...data, updatedAt: serverTimestamp() });
+    const cleanData = Object.fromEntries(
+      Object.entries({ ...data, updatedAt: serverTimestamp() })
+        .filter(([, v]) => v !== undefined)
+    );
+    await updateDoc(ref, cleanData);
   }, [user]);
 
   const deleteDocument = useCallback(async (id: string) => {

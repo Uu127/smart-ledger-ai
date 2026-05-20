@@ -21,6 +21,7 @@ export const db       = getFirestore(app);
 export const storage  = getStorage(app);
 export const functions = getFunctions(app, "asia-northeast1");
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope("https://www.googleapis.com/auth/spreadsheets");
 
 enableIndexedDbPersistence(db).catch((err) => {
   if (err.code === "failed-precondition") {

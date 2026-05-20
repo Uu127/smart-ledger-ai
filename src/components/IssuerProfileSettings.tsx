@@ -6,7 +6,7 @@ import { useIssuerProfile } from "@/hooks/useDocuments";
 import type { IssuerProfile } from "@/types/document";
 
 const DEFAULT_PROFILE: IssuerProfile = {
-  name: "", address: "", phone: "", email: "",
+  name: "", contactPerson: "", address: "", phone: "", email: "",
   invoiceRegistrationNo: "",
   bankName: "", bankBranch: "", bankAccountType: "普通",
   bankAccountNo: "", bankAccountHolder: "",
@@ -77,6 +77,13 @@ export function IssuerProfileSettings() {
             <label className={labelClass} style={labelStyle}>屋号 / 会社名 *</label>
             <input type="text" value={form.name} onChange={e => set("name", e.target.value)}
               placeholder="例: 山田太郎事務所" required
+              className={inputClass} style={inputStyle} />
+          </div>
+
+          <div className="space-y-1">
+            <label className={labelClass} style={labelStyle}>担当者</label>
+            <input type="text" value={form.contactPerson ?? ""} onChange={e => set("contactPerson", e.target.value)}
+              placeholder="例: 山田太郎"
               className={inputClass} style={inputStyle} />
           </div>
 

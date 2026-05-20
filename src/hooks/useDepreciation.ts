@@ -1,7 +1,7 @@
 // src/hooks/useDepreciation.ts
 import { useCallback, useEffect, useState } from "react";
 import {
-  collection, addDoc, deleteDoc, doc,
+  collection, addDoc, deleteDoc, doc, updateDoc,
   onSnapshot, serverTimestamp, query, orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -143,10 +143,15 @@ export function useDepreciation() {
     });
   }, [user]);
 
+  const updateAsset = useCallback(async (id: string, data: Omit<FixedAsset, "id" | "createdAt">) => {
+    if (!user) return;
+    await updateDoc(doc(db, "users", user.uid, "fixedAssets", id), { ...data });
+  }, [user]);
+
   const removeAsset = useCallback(async (id: string) => {
     if (!user) return;
     await deleteDoc(doc(db, "users", user.uid, "fixedAssets", id));
   }, [user]);
 
-  return { assets, loading, addAsset, removeAsset };
+  return { assets, loading, addAsset, updateAsset, removeAsset };
 }

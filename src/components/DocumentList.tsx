@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { FileText, Trash2, Printer, Building2, Receipt, TrendingUp, Package, ClipboardList, Pencil } from "lucide-react";
 import { useDocuments } from "@/hooks/useDocuments";
 import { DOCUMENT_TYPE_LABELS, type DocumentType, type BusinessDocument } from "@/types/document";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const TYPE_COLORS: Record<DocumentType, string> = {
   invoice:  "bg-blue-100 text-blue-700",
@@ -36,7 +37,8 @@ const STATUS_LABELS = {
 export function DocumentList() {
   const navigate = useNavigate();
   const { documents, loading, deleteDocument, updateDocument } = useDocuments();
-  const [filter, setFilter] = useState<DocumentType | "all">("all");
+  const [filter, setFilter]       = useState<DocumentType | "all">("all");
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const filtered = filter === "all" ? documents : documents.filter(d => d.type === filter);
 
@@ -129,9 +131,8 @@ export function DocumentList() {
                   <Printer className="w-4 h-4" />
                 </Link>
                 {/* 削除ボタン */}
-                <button onClick={() => {
-                  if (confirm("この書類を削除しますか？")) deleteDocument(doc.id);
-                }} className="p-2 text-slate-300 hover:text-red-400 active:scale-90 transition-all">
+                <button onClick={() => setConfirmId(doc.id)}
+                  className="p-2 text-slate-300 hover:text-red-400 active:scale-90 transition-all">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -171,6 +172,14 @@ export function DocumentList() {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmId !== null}
+        title="書類を削除しますか？"
+        message="この操作は元に戻せません"
+        onConfirm={() => { if (confirmId) deleteDocument(confirmId); setConfirmId(null); }}
+        onCancel={() => setConfirmId(null)}
+      />
     </motion.div>
   );
 }

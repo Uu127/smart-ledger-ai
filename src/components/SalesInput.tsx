@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, CheckCircle2, Plus, Camera, Image as ImageIcon, X, AlertCircle, Sparkles } from "lucide-react";
+import { DateInput } from "@/components/DateInput";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
 import { useLedger } from "@/hooks/useLedger";
@@ -146,15 +147,16 @@ export function SalesInput() {
       <motion.section
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100"
+        className="rounded-3xl p-6 shadow-sm border"
+        style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
       >
         <div className="flex items-center gap-2 mb-5">
           <div className="bg-blue-100 p-2 rounded-lg">
             <Sparkles className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-800">請求書をスキャン</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">AI Auto Capture</p>
+            <h3 className="text-sm font-bold" style={{ color: "var(--text-main)" }}>請求書をスキャン</h3>
+            <p className="text-[10px] font-bold uppercase tracking-tight" style={{ color: "var(--text-muted)" }}>AI Auto Capture</p>
           </div>
         </div>
 
@@ -162,7 +164,8 @@ export function SalesInput() {
           <button
             type="button"
             onClick={() => { triggerHaptic(); fileInputCameraRef.current?.click(); }}
-            className="flex flex-col items-center justify-center gap-3 py-9 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all active:scale-95"
+            className="flex flex-col items-center justify-center gap-3 py-9 rounded-2xl border-2 border-dashed transition-all active:scale-95"
+            style={{ backgroundColor: "var(--bg-input)", borderColor: "var(--border)", color: "var(--text-sub)" }}
           >
             <Camera className="w-7 h-7" />
             <span className="text-xs font-bold">カメラで撮る</span>
@@ -170,7 +173,8 @@ export function SalesInput() {
           <button
             type="button"
             onClick={() => { triggerHaptic(); fileInputGalleryRef.current?.click(); }}
-            className="flex flex-col items-center justify-center gap-3 py-9 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all active:scale-95"
+            className="flex flex-col items-center justify-center gap-3 py-9 rounded-2xl border-2 border-dashed transition-all active:scale-95"
+            style={{ backgroundColor: "var(--bg-input)", borderColor: "var(--border)", color: "var(--text-sub)" }}
           >
             <ImageIcon className="w-7 h-7" />
             <span className="text-xs font-bold">アルバムから</span>
@@ -181,7 +185,8 @@ export function SalesInput() {
         <button
           type="button"
           onClick={handleManual}
-          className="w-full py-3 rounded-2xl border-2 border-slate-100 text-slate-500 text-xs font-bold hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-2xl border-2 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-2"
+          style={{ borderColor: "var(--border)", color: "var(--text-sub)" }}
         >
           <Plus className="w-4 h-4" /> 手動で入力する
         </button>
@@ -202,23 +207,26 @@ export function SalesInput() {
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-white rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.12)]"
-              style={{ maxHeight: "85dvh" }}
+              className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.12)]"
+              style={{ maxHeight: "85dvh", backgroundColor: "var(--bg-card)" }}
             >
               {/* グラブバー */}
               <div className="flex justify-center pt-3 pb-0 shrink-0">
-                <div className="w-10 h-1 rounded-full bg-slate-200" />
+                <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "var(--border)" }} />
               </div>
 
               {/* ヘッダー */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
-                <h3 className="font-black text-slate-800 flex items-center gap-2">
+              <div className="flex items-center justify-between px-6 py-4 border-b shrink-0"
+                style={{ borderColor: "var(--border)" }}>
+                <h3 className="font-black flex items-center gap-2" style={{ color: "var(--text-main)" }}>
                   {loading
                     ? <><span className="inline-block w-2 h-2 rounded-full bg-blue-400 animate-ping" />解析中...</>
                     : "売上内容の確認"
                   }
                 </h3>
-                <button onClick={closeDrawer} className="p-2 bg-slate-100 text-slate-400 rounded-full hover:bg-slate-200 active:scale-90 transition-all">
+                <button onClick={closeDrawer}
+                  className="p-2 rounded-full active:scale-90 transition-all"
+                  style={{ backgroundColor: "var(--bg-input)", color: "var(--text-sub)" }}>
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -238,24 +246,28 @@ export function SalesInput() {
                     <div className="space-y-5 animate-pulse">
                       {[...Array(5)].map((_, i) => (
                         <div key={i} className="space-y-2">
-                          <div className="h-3 bg-slate-200 rounded-full w-16" />
-                          <div className="h-12 bg-slate-100 rounded-xl" />
+                          <div className="h-3 rounded-full w-16" style={{ backgroundColor: "var(--bg-input)" }} />
+                          <div className="h-12 rounded-xl" style={{ backgroundColor: "var(--bg-input)" }} />
                         </div>
                       ))}
-                      <div className="h-14 bg-slate-200 rounded-2xl" />
+                      <div className="h-14 rounded-2xl" style={{ backgroundColor: "var(--bg-input)" }} />
                     </div>
                   ) : (
                     <form onSubmit={handleSubmit} className="space-y-5">
 
                       {/* 金額 */}
-                      <div className="border-b-2 border-slate-100 pb-3 focus-within:border-blue-500 transition-colors">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">金額 (円)</label>
-                        <div className="flex items-center text-4xl font-black text-slate-900 mt-1">
-                          <span className="text-slate-300 mr-2 text-2xl">¥</span>
+                      <div className="border-b-2 pb-3 focus-within:border-blue-500 transition-colors"
+                        style={{ borderColor: "var(--border)" }}>
+                        <label className="text-[10px] font-black uppercase"
+                          style={{ color: "var(--text-muted)" }}>金額 (円)</label>
+                        <div className="flex items-center text-4xl font-black mt-1"
+                          style={{ color: "var(--text-main)" }}>
+                          <span className="mr-2 text-2xl" style={{ color: "var(--text-muted)" }}>¥</span>
                           <input
                             type="number" inputMode="numeric" value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            className="w-full bg-transparent focus:outline-none placeholder:text-slate-200"
+                            className="w-full bg-transparent focus:outline-none"
+                            style={{ color: "var(--text-main)" }}
                             placeholder="0" required
                           />
                         </div>
@@ -263,17 +275,19 @@ export function SalesInput() {
 
                       {/* 日付 */}
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">日付</label>
-                        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required
-                          className="w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
+                        <label className="text-[10px] font-black uppercase"
+                          style={{ color: "var(--text-muted)" }}>日付</label>
+                        <DateInput value={date} onChange={setDate} required
+                          className="w-full focus-within:ring-2 focus-within:ring-blue-400" />
                       </div>
 
                       {/* 入金先 */}
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">入金先（借方）</label>
+                        <label className="text-[10px] font-black uppercase"
+                          style={{ color: "var(--text-muted)" }}>入金先（借方）</label>
                         <select value={debitAccount} onChange={(e) => setDebitAccount(e.target.value as IncomeDebitAccount)}
-                          className="w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full p-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          style={{ backgroundColor: "var(--bg-input)", color: "var(--text-main)" }}
                         >
                           {INCOME_DEBIT_ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}
                         </select>
@@ -281,14 +295,17 @@ export function SalesInput() {
 
                       {/* 取引先・摘要 */}
                       <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">取引先・摘要</label>
+                        <label className="text-[10px] font-black uppercase"
+                          style={{ color: "var(--text-muted)" }}>取引先・摘要</label>
                         <input type="text" value={counterparty} onChange={(e) => setCounterparty(e.target.value)}
                           placeholder="例: 株式会社〇〇"
-                          className="w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
+                          className="w-full p-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
+                          style={{ backgroundColor: "var(--bg-input)", color: "var(--text-main)" }}
                         />
                         <input type="text" value={description} onChange={(e) => setDescription(e.target.value)}
                           placeholder="例: 〇〇業務委託料"
-                          className="w-full p-3 rounded-xl bg-slate-50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full p-3 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          style={{ backgroundColor: "var(--bg-input)", color: "var(--text-main)" }}
                         />
                       </div>
 
@@ -296,11 +313,14 @@ export function SalesInput() {
                       <button type="submit" disabled={!date || !amount}
                         className={`w-full py-5 rounded-2xl font-black text-white transition-all duration-300 flex items-center justify-center gap-2
                           ${(!date || !amount)
-                            ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                            ? "cursor-not-allowed opacity-40"
                             : submitted
                             ? "bg-blue-500 shadow-lg shadow-blue-200"
                             : "bg-blue-600 shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95"
                           }`}
+                        style={(!date || !amount)
+                          ? { backgroundColor: "var(--bg-input)", color: "var(--text-muted)" }
+                          : {}}
                       >
                         {submitted
                           ? <><CheckCircle2 className="w-6 h-6" /> 記録しました！</>

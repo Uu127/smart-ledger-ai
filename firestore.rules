@@ -2,12 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── ユーザードキュメント ──────────────────────────────
-    // users/{uid} 本体：自分のみ読み書き可
     match /users/{uid} {
       allow read, write: if isOwner(uid);
 
-      // ── 仕訳エントリ ───────────────────────────────────
       match /entries/{entryId} {
         allow read:   if isOwner(uid);
         allow create: if isOwner(uid) && isValidEntry();
@@ -15,18 +12,23 @@ service cloud.firestore {
         allow delete: if isOwner(uid);
       }
 
-      // ── 設定 ───────────────────────────────────────────
       match /settings/{settingId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /documents/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /fixedAssets/{assetId} {
         allow read, write: if isOwner(uid);
       }
     }
 
-    // ── 上記以外は全て拒否 ───────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // ── ヘルパー関数 ─────────────────────────────────────
     function isOwner(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
@@ -36,9 +38,9 @@ service cloud.firestore {
       return d.keys().hasAll(['date', 'amount', 'debitAccount', 'creditAccount'])
           && d.amount is number
           && d.amount >= 0
-          && d.amount <= 100000000  // 上限1億円
+          && d.amount <= 100000000
           && d.date is string
-          && d.date.size() == 10;   // YYYY-MM-DD
+          && d.date.size() == 10;
     }
   }
 }

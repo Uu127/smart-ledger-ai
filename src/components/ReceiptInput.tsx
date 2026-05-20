@@ -7,6 +7,7 @@ import { useReceiptParse } from "@/hooks/useReceiptParse";
 import { useLedger } from "@/hooks/useLedger";
 import { DEBIT_ACCOUNTS_BY_GROUP, CREDIT_ACCOUNTS, DEBIT_ACCOUNT_LABELS } from "@/constants/accounts";
 import { FixedAssetForm } from "@/components/FixedAssetForm";
+import { DateInput } from "@/components/DateInput";
 import type { DebitAccountLabel, CreditAccountLabel } from "@/types/ledger";
 
 export function ReceiptInput() {
@@ -220,8 +221,8 @@ export function ReceiptInput() {
                       {/* 日付 */}
                       <div className="space-y-1">
                         <label className="text-[10px] font-black uppercase" style={labelStyle}>日付</label>
-                        <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                          required className={inputClass} style={inputStyle} />
+                        <DateInput value={date} onChange={setDate} required
+                          className="w-full focus-within:ring-2 focus-within:ring-emerald-400" />
                       </div>
 
                       {/* 借方科目 */}
