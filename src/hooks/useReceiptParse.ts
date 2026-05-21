@@ -6,13 +6,35 @@ import type { ReceiptParseResult } from "@/types/ledger";
 
 type Status = "idle" | "loading" | "success" | "error";
 
-// 画像を Base64 に変換するユーティリティ
-async function toBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+// Canvas経由でJPEGに変換（iOS HEIC・空MIMEタイプ対応）
+async function fileToJpeg(file: File): Promise<{ base64: string; mimeType: string }> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1600;
+      const scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(img.naturalWidth  * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve({
+        base64: canvas.toDataURL("image/jpeg", 0.85).split(",")[1],
+        mimeType: "image/jpeg",
+      });
+    };
+    // canvas変換できない場合（まれにあるフォーマット）はFileReaderで直接読む
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        base64: (reader.result as string).split(",")[1],
+        mimeType: file.type || "image/jpeg",
+      });
+      reader.readAsDataURL(file);
+    };
+    img.src = url;
   });
 }
 
@@ -25,13 +47,13 @@ export function useReceiptParse() {
     setStatus("loading");
     setError(null);
     try {
-      const base64Data = await toBase64(file);
+      const { base64, mimeType } = await fileToJpeg(file);
       const parseReceipt = httpsCallable<
-        { base64Data: string; mimeType: string },
+        { imageBase64: string; mimeType: string },
         ReceiptParseResult
       >(functions, "parseReceipt");
 
-      const res = await parseReceipt({ base64Data, mimeType: file.type });
+      const res = await parseReceipt({ imageBase64: base64, mimeType });
       setResult(res.data);
       setStatus("success");
       return res.data;

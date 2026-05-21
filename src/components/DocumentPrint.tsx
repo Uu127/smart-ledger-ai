@@ -156,11 +156,7 @@ function PrintLayout({ doc, docTitle }: { doc: Doc; docTitle: string }) {
         padding: "3mm 6mm", marginBottom: "5mm", background: "#f8fafc",
       }}>
         <span style={{ fontSize: "10pt", fontWeight: "bold" }}>
-<<<<<<< HEAD
-          {doc.type === "invoice" ? "ご請求金額" : "合計金額"}{showTaxLabels ? "（税込）" : ""}
-=======
           {doc.type === "invoice" ? "ご請求金額" : "合計金額"}{!doc.hideTaxDisplay && "（税込）"}
->>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
         </span>
         <span style={{ fontSize: "20pt", fontWeight: "bold" }}>{yen(doc.total)}</span>
       </div>
@@ -174,15 +170,9 @@ function PrintLayout({ doc, docTitle }: { doc: Doc; docTitle: string }) {
               <th style={{ padding: "2.5mm 4mm", textAlign: "left",   width: "44%" }}>項　目</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "9%"  }}>数量</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "7%"  }}>単位</th>
-<<<<<<< HEAD
-              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{showTaxLabels ? "単価（税抜）" : "単価"}</th>
-              <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "8%"  }}>税率</th>
-              <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{showTaxLabels ? "金額（税込）" : "金額"}</th>
-=======
               <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{doc.hideTaxDisplay ? "単価" : "単価（税抜）"}</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "center", width: "8%"  }}>税率</th>
               <th style={{ padding: "2.5mm 4mm", textAlign: "right",  width: "16%" }}>{doc.hideTaxDisplay ? "金額" : "金額（税込）"}</th>
->>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
             </tr>
           </thead>
           <tbody>
@@ -218,11 +208,7 @@ function PrintLayout({ doc, docTitle }: { doc: Doc; docTitle: string }) {
         <table style={{ borderCollapse: "collapse", fontSize: "8.5pt", minWidth: "200px" }}>
           <tbody>
             <tr>
-<<<<<<< HEAD
-              <td style={{ padding: "2mm 4mm", color: "#64748b", border }}>小　計{showTaxLabels ? "（参考：税抜）" : ""}</td>
-=======
               <td style={{ padding: "2mm 4mm", color: "#64748b", border }}>{doc.hideTaxDisplay ? "小　計" : "小　計（参考：税抜）"}</td>
->>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
               <td style={{ padding: "2mm 4mm", textAlign: "right", border }}>{yen(doc.subtotal)}</td>
             </tr>
             {doc.tax10 > 0 && (
@@ -239,11 +225,7 @@ function PrintLayout({ doc, docTitle }: { doc: Doc; docTitle: string }) {
             )}
             <tr style={{ backgroundColor: "#f0fdf4" }}>
               <td style={{ padding: "2.5mm 4mm", fontWeight: "bold", border, borderTop: "2px solid #1e293b" }}>
-<<<<<<< HEAD
-                ご請求合計{showTaxLabels ? "（税込）" : ""}
-=======
                 {doc.hideTaxDisplay ? "ご請求合計" : "ご請求合計（税込）"}
->>>>>>> ea3cbe7 (feat: 総勘定元帳・固定資産台帳・書類管理・日付入力を大幅強化)
               </td>
               <td style={{ padding: "2.5mm 4mm", textAlign: "right", fontWeight: "bold", border, borderTop: "2px solid #1e293b" }}>
                 {yen(doc.total)}

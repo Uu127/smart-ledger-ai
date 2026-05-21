@@ -14,8 +14,9 @@ export const parseReceipt = onCall(
   { secrets: [GEMINI_KEY], region: "asia-northeast1" },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
-    const { imageBase64, mimeType } = request.data;
-    if (!imageBase64 || !mimeType) throw new HttpsError("invalid-argument", "Missing image data");
+    const imageBase64 = request.data.imageBase64 ?? request.data.base64Data;
+    const mimeType    = request.data.mimeType || "image/jpeg";
+    if (!imageBase64) throw new HttpsError("invalid-argument", "Missing image data");
 
     const apiKey   = GEMINI_KEY.value();
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -75,8 +76,9 @@ export const parseSalesReceipt = onCall(
   { secrets: [GEMINI_KEY], region: "asia-northeast1" },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
-    const { imageBase64, mimeType } = request.data;
-    if (!imageBase64 || !mimeType) throw new HttpsError("invalid-argument", "Missing image data");
+    const imageBase64 = request.data.imageBase64 ?? request.data.base64Data;
+    const mimeType    = request.data.mimeType || "image/jpeg";
+    if (!imageBase64) throw new HttpsError("invalid-argument", "Missing image data");
 
     const apiKey   = GEMINI_KEY.value();
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
